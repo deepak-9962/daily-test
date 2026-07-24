@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Admin - Daily Polls</title>
+  <link rel="stylesheet" href="style.css">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+  
+  <div id="password-modal">
+    <div class="modal-content">
+      <h2>Admin Login</h2>
+      <p style="color:var(--text-muted); margin-bottom:1rem; font-size:0.9rem;">(Hint: The password is admin123)</p>
+      <input type="password" id="admin-pwd" placeholder="Enter password" autofocus>
+      <button id="login-btn">Access Panel</button>
+    </div>
+  </div>
+
+  <div class="container" id="admin-container" style="display:none;">
+    <div class="header-actions">
+      <a href="index.html">← Back to Polls</a>
+    </div>
+    <h1>Setup Today's Quiz</h1>
+    <div id="admin-questions">
+      <div class="loading">Loading current questions...</div>
+    </div>
+    <button id="save-btn" class="save-btn">Publish New Quiz</button>
+  </div>
+  
+  <div class="toast" id="toast">Changes published successfully!</div>
+
+  <script src="admin.js"></script>
+</body>
+</html>

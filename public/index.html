@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Daily Polls</title>
+  <link rel="stylesheet" href="style.css">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+  <div class="container">
+    <div class="header-actions">
+      <a href="admin.html">Admin Panel</a>
+    </div>
+    <div id="timer" style="text-align:center; font-size:1.5rem; font-weight:bold; color:var(--accent); margin-bottom:1rem; padding:10px; background:rgba(0,0,0,0.3); border-radius:8px; display:inline-block; margin-left:auto; margin-right:auto;">
+      15:00
+    </div>
+    <h1>Today's Questions</h1>
+    <div id="questions-container">
+      <div class="loading">Loading today's questions...</div>
+    </div>
+  </div>
+  <script src="script.js"></script>
+</body>
+</html>
