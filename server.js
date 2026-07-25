@@ -7,21 +7,53 @@ const PORT = process.env.PORT || 3000;
 app.use(express.json({ limit: '10mb' }));
 app.use(express.static('public'));
 
-// ─── File Paths ────────────────────────────────────────────────────────────
-const TESTS_FILE = path.join(__dirname, 'db', 'tests.json');
-const SUBS_FILE  = path.join(__dirname, 'db', 'submissions.json');
+// ─── File Paths (Vercel-safe fallback to /tmp if read-only) ────────────────
+const DB_DIR = process.env.VERCEL ? '/tmp' : path.join(__dirname, 'db');
+const TESTS_FILE = path.join(DB_DIR, 'tests.json');
+const SUBS_FILE  = path.join(DB_DIR, 'submissions.json');
+
+function ensureDbFiles() {
+  if (!fs.existsSync(DB_DIR)) {
+    try { fs.mkdirSync(DB_DIR, { recursive: true }); } catch (e) {}
+  }
+  const seedTests = path.join(__dirname, 'db', 'tests.json');
+  const seedSubs  = path.join(__dirname, 'db', 'submissions.json');
+
+  if (!fs.existsSync(TESTS_FILE)) {
+    try {
+      if (fs.existsSync(seedTests)) {
+        fs.copyFileSync(seedTests, TESTS_FILE);
+      } else {
+        fs.writeFileSync(TESTS_FILE, JSON.stringify({ tests: [] }));
+      }
+    } catch (e) {}
+  }
+  if (!fs.existsSync(SUBS_FILE)) {
+    try {
+      if (fs.existsSync(seedSubs)) {
+        fs.copyFileSync(seedSubs, SUBS_FILE);
+      } else {
+        fs.writeFileSync(SUBS_FILE, JSON.stringify({ submissions: [] }));
+      }
+    } catch (e) {}
+  }
+}
 
 // ─── DB Helpers ────────────────────────────────────────────────────────────
 function readTests() {
+  ensureDbFiles();
   return JSON.parse(fs.readFileSync(TESTS_FILE, 'utf8'));
 }
 function writeTests(data) {
+  ensureDbFiles();
   fs.writeFileSync(TESTS_FILE, JSON.stringify(data, null, 2));
 }
 function readSubs() {
+  ensureDbFiles();
   return JSON.parse(fs.readFileSync(SUBS_FILE, 'utf8'));
 }
 function writeSubs(data) {
+  ensureDbFiles();
   fs.writeFileSync(SUBS_FILE, JSON.stringify(data, null, 2));
 }
 
@@ -624,9 +656,13 @@ app.post('/api/answer', (req, res) => {
   res.json({ success: true, answer: answerIndex });
 });
 
-// ─── Start Server ──────────────────────────────────────────────────────────
-app.listen(PORT, () => {
-  console.log(`✅ TestFlow server running at http://localhost:${PORT}`);
-  console.log(`📊 Admin panel: http://localhost:${PORT}/admin.html`);
-  console.log(`📈 Analytics: http://localhost:${PORT}/analytics.html`);
-});
+// ─── Start Server / Export for Vercel ─────────────────────────────────────
+if (require.main === module) {
+  app.listen(PORT, () => {
+    console.log(`✅ TestFlow server running at http://localhost:${PORT}`);
+    console.log(`📊 Admin panel: http://localhost:${PORT}/admin.html`);
+    console.log(`📈 Analytics: http://localhost:${PORT}/analytics.html`);
+  });
+}
+
+module.exports = app;
