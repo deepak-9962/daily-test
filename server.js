@@ -5,7 +5,11 @@ const app = express();
 const PORT = process.env.PORT || 3000;
 
 app.use(express.json({ limit: '10mb' }));
-app.use(express.static('public'));
+app.use(express.static(path.join(__dirname, 'public')));
+
+app.get('/', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'index.html'));
+});
 
 // ─── File Paths (Vercel-safe fallback to /tmp if read-only) ────────────────
 const DB_DIR = process.env.VERCEL ? '/tmp' : path.join(__dirname, 'db');
