@@ -456,7 +456,11 @@ app.get('/api/analytics/history', (req, res) => {
     const { tests } = readTests();
     const { submissions } = readSubs();
 
-    const completedTests = tests.filter(t => t.status === 'completed' || t.status === 'archived');
+    // Include any test that has a completed submission, or has status completed/archived
+    const completedTests = tests.filter(t => {
+      const hasSub = submissions.some(s => s.testId === t.id && s.submittedAt);
+      return hasSub || t.status === 'completed' || t.status === 'archived';
+    });
 
     // Score trend
     const scoreTrend = completedTests.map(t => {
