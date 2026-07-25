@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html class="light" lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>TestFlow Analytics</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script id="tailwind-config">
+  tailwind.config = {
+    darkMode:"class",
+    theme:{ extend:{
+      colors:{
+        "primary":"#3525cd","primary-container":"#4f46e5","on-primary":"#ffffff","on-primary-container":"#dad7ff",
+        "primary-fixed":"#e2dfff","background":"#f9f9ff","surface":"#f9f9ff",
+        "surface-container":"#e9edff","surface-container-high":"#e1e8fd","surface-container-highest":"#dce2f7",
+        "surface-container-low":"#f1f3ff","surface-container-lowest":"#ffffff","surface-variant":"#dce2f7",
+        "on-surface":"#141b2b","on-surface-variant":"#464555","outline":"#777587","outline-variant":"#c7c4d8",
+        "inverse-surface":"#293040","error":"#ba1a1a","error-container":"#ffdad6","on-error":"#ffffff"
+      },
+      borderRadius:{ DEFAULT:"0.25rem", lg:"0.5rem", xl:"0.75rem", full:"9999px" },
+      spacing:{ xs:"4px", sm:"8px", md:"16px", lg:"24px", xl:"40px", gutter:"24px" },
+      fontFamily:{ "headline-lg":["Inter"],"headline-md":["Inter"],"body-md":["Inter"],"body-lg":["Inter"],"label-md":["Inter"],"timer-mono":["JetBrains Mono"] },
+      fontSize:{
+        "headline-lg":["32px",{lineHeight:"1.2",letterSpacing:"-0.02em",fontWeight:"600"}],
+        "headline-md":["20px",{lineHeight:"1.4",fontWeight:"600"}],
+        "body-md":["16px",{lineHeight:"1.6",fontWeight:"400"}],
+        "label-md":["14px",{lineHeight:"1",fontWeight:"500"}],
+        "timer-mono":["18px",{lineHeight:"1",letterSpacing:"0.05em",fontWeight:"500"}]
+      }
+    }}
+  }
+</script>
+<style>
+  .material-symbols-outlined { font-family:'Material Symbols Outlined'; font-weight:normal; font-style:normal; font-size:24px; line-height:1; display:inline-block; white-space:nowrap; -webkit-font-smoothing:antialiased; }
+  ::-webkit-scrollbar { width:8px; } ::-webkit-scrollbar-thumb { background:#dce2f7; border-radius:4px; }
+  .nav-item { display:flex; align-items:center; gap:8px; padding:8px 12px; border-radius:8px; font-size:14px; font-weight:500; cursor:pointer; transition:all .15s; width:100%; text-align:left; }
+  .nav-item:hover { background:#e9edff; color:#3525cd; }
+  .nav-item.active { background:#e2dfff; color:#3525cd; }
+  .stat-card { background:#fff; border:1px solid #c7c4d8; border-radius:0.75rem; padding:24px; }
+  .chart-container { position:relative; }
+</style>
+</head>
+<body class="bg-background text-on-surface font-body-md antialiased">
+
+<!-- Password Modal -->
+<div id="password-modal" class="fixed inset-0 bg-inverse-surface/40 backdrop-blur-sm flex items-center justify-center z-50">
+  <div class="bg-surface-container-lowest border border-outline-variant rounded-xl p-xl max-w-sm w-full mx-md shadow-xl">
+    <div class="flex items-center gap-sm mb-lg">
+      <span class="material-symbols-outlined text-primary">bar_chart</span>
+      <h2 class="text-headline-md font-headline-md">Analytics</h2>
+    </div>
+    <p class="text-body-md text-on-surface-variant mb-lg">Enter admin password to view analytics.</p>
+    <input type="password" id="admin-pwd" class="w-full px-md py-sm border border-outline-variant rounded-lg text-body-md outline-none focus:border-primary mb-md" placeholder="Password" autofocus/>
+    <p id="login-error" class="hidden text-error text-[12px] mb-sm font-label-md">Incorrect password.</p>
+    <button id="login-btn" class="w-full py-sm px-lg bg-primary-container text-on-primary-container rounded-lg font-headline-md text-[16px] hover:bg-primary hover:text-on-primary transition-colors flex items-center justify-center gap-sm">
+      <span class="material-symbols-outlined text-[18px]">bar_chart</span> View Analytics
+    </button>
+  </div>
+</div>
+
+<!-- Main Layout -->
+<div id="analytics-app" class="hidden flex min-h-screen">
+  <!-- Sidebar -->
+  <aside class="w-60 bg-surface-container-lowest border-r border-outline-variant flex flex-col fixed h-full z-40">
+    <div class="px-lg py-md flex items-center gap-sm border-b border-outline-variant">
+      <span class="material-symbols-outlined text-primary">assignment</span>
+      <span class="text-headline-md font-headline-md text-primary">TestFlow</span>
+    </div>
+    <nav class="flex flex-col gap-xs p-sm flex-1">
+      <a href="admin.html" class="nav-item text-on-surface-variant">
+        <span class="material-symbols-outlined text-[20px]">settings</span> Admin Panel
+      </a>
+      <a href="index.html" class="nav-item text-on-surface-variant">
+        <span class="material-symbols-outlined text-[20px]">home</span> Participant View
+      </a>
+      <div class="border-t border-outline-variant my-sm"></div>
+      <div class="nav-item active text-primary">
+        <span class="material-symbols-outlined text-[20px]">bar_chart</span> Analytics
+      </div>
+    </nav>
+  </aside>
+
+  <!-- Main Content -->
+  <main class="flex-1 ml-60 p-xl overflow-y-auto">
+
+    <div class="flex items-center justify-between mb-xl">
+      <div>
+        <h1 class="text-headline-lg font-headline-lg text-on-surface">Analytics Dashboard</h1>
+        <p class="text-body-md text-on-surface-variant mt-xs">Performance history, topic insights, and time analysis.</p>
+      </div>
+      <button onclick="loadAnalytics()" class="flex items-center gap-sm px-md py-sm border border-outline-variant rounded-lg font-label-md text-on-surface-variant hover:bg-surface-container transition-colors">
+        <span class="material-symbols-outlined text-[18px]">refresh</span> Refresh
+      </button>
+    </div>
+
+    <!-- Loading -->
+    <div id="analytics-loading" class="flex items-center gap-sm text-on-surface-variant py-xl">
+      <span class="material-symbols-outlined animate-spin">sync</span>
+      <span class="text-body-md">Loading analytics...</span>
+    </div>
+
+    <!-- Dashboard content -->
+    <div id="analytics-content" class="hidden space-y-xl">
+
+      <!-- ── Current Test Panel ─────────────────────────────── -->
+      <section id="current-panel">
+        <h2 class="text-headline-md font-headline-md text-on-surface mb-md flex items-center gap-sm">
+          <span class="material-symbols-outlined text-primary text-[22px]">monitor_heart</span> Current Test
+        </h2>
+        <div id="current-content"></div>
+      </section>
+
+      <hr class="border-outline-variant"/>
+
+      <!-- ── Summary Stats ──────────────────────────────────── -->
+      <section>
+        <h2 class="text-headline-md font-headline-md text-on-surface mb-md flex items-center gap-sm">
+          <span class="material-symbols-outlined text-primary text-[22px]">insights</span> Overall Stats
+        </h2>
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-md">
+          <div class="stat-card">
+            <p class="text-label-md font-label-md text-on-surface-variant mb-xs text-[11px] uppercase tracking-widest">Tests Taken</p>
+            <p id="stat-tests" class="text-headline-md font-headline-md text-primary">—</p>
+          </div>
+          <div class="stat-card">
+            <p class="text-label-md font-label-md text-on-surface-variant mb-xs text-[11px] uppercase tracking-widest">Avg Score</p>
+            <p id="stat-avg-score" class="text-headline-md font-headline-md text-primary">—</p>
+          </div>
+          <div class="stat-card">
+            <p class="text-label-md font-label-md text-on-surface-variant mb-xs text-[11px] uppercase tracking-widest">Best Score</p>
+            <p id="stat-best" class="text-headline-md font-headline-md text-primary">—</p>
+          </div>
+          <div class="stat-card">
+            <p class="text-label-md font-label-md text-on-surface-variant mb-xs text-[11px] uppercase tracking-widest">Avg Time/Q</p>
+            <p id="stat-time" class="text-headline-md font-headline-md text-primary">—</p>
+          </div>
+        </div>
+      </section>
+
+      <!-- ── Score Trend Chart ──────────────────────────────── -->
+      <section>
+        <h2 class="text-headline-md font-headline-md text-on-surface mb-md flex items-center gap-sm">
+          <span class="material-symbols-outlined text-primary text-[22px]">show_chart</span> Score Trend Over Time
+        </h2>
+        <div class="stat-card">
+          <div class="chart-container" style="height:260px">
+            <canvas id="score-chart"></canvas>
+          </div>
+        </div>
+      </section>
+
+      <!-- ── Topic Breakdown Chart ───────────────────────────── -->
+      <section>
+        <h2 class="text-headline-md font-headline-md text-on-surface mb-md flex items-center gap-sm">
+          <span class="material-symbols-outlined text-primary text-[22px]">category</span> Topic Accuracy (Worst First)
+        </h2>
+        <div id="topic-empty" class="hidden stat-card text-on-surface-variant text-body-md">No topic data yet.</div>
+        <div class="stat-card">
+          <div class="chart-container" style="height:280px">
+            <canvas id="topic-chart"></canvas>
+          </div>
+        </div>
+      </section>
+
+      <!-- ── Time Analysis ──────────────────────────────────── -->
+      <section id="time-section">
+        <h2 class="text-headline-md font-headline-md text-on-surface mb-md flex items-center gap-sm">
+          <span class="material-symbols-outlined text-primary text-[22px]">avg_pace</span> Time Analysis
+        </h2>
+        <div id="time-content" class="stat-card text-on-surface-variant text-body-md">No time data yet.</div>
+      </section>
+
+      <!-- ── Test History Table ─────────────────────────────── -->
+      <section>
+        <h2 class="text-headline-md font-headline-md text-on-surface mb-md flex items-center gap-sm">
+          <span class="material-symbols-outlined text-primary text-[22px]">history</span> Test History
+        </h2>
+        <div id="history-empty" class="hidden stat-card text-on-surface-variant text-body-md">No completed tests yet.</div>
+        <div id="history-table-wrapper" class="stat-card overflow-x-auto hidden">
+          <table class="w-full text-[14px] border-collapse">
+            <thead>
+              <tr class="border-b border-outline-variant text-left">
+                <th class="pb-sm pr-md font-label-md text-on-surface-variant">Test</th>
+                <th class="pb-sm pr-md font-label-md text-on-surface-variant">Date</th>
+                <th class="pb-sm pr-md font-label-md text-on-surface-variant">Score</th>
+                <th class="pb-sm pr-md font-label-md text-on-surface-variant">Accuracy</th>
+                <th class="pb-sm pr-md font-label-md text-on-surface-variant">Time</th>
+                <th class="pb-sm font-label-md text-on-surface-variant"></th>
+              </tr>
+            </thead>
+            <tbody id="history-tbody"></tbody>
+          </table>
+        </div>
+      </section>
+
+    </div>
+  </main>
+</div>
+
+<script src="analytics.js"></script>
+</body>
+</html>

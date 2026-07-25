@@ -1,0 +1,133 @@
+{
+  "tests": [
+    {
+      "id": "test_seed_001",
+      "title": "Daily Quiz — Seed",
+      "createdAt": "2026-07-25T00:00:00.000Z",
+      "timerMinutes": 15,
+      "status": "completed",
+      "questions": [
+        {
+          "id": "q1",
+          "text": "Question 1",
+          "options": [
+            "Option 1",
+            "Option 2",
+            "Option 3",
+            "Option 4"
+          ],
+          "correctIndex": 0,
+          "topic": "General"
+        },
+        {
+          "id": "q2",
+          "text": "Question 2",
+          "options": [
+            "Option 1",
+            "Option 2",
+            "Option 3",
+            "Option 4"
+          ],
+          "correctIndex": 0,
+          "topic": "General"
+        },
+        {
+          "id": "q3",
+          "text": "Question 3",
+          "options": [
+            "Option 1",
+            "Option 2",
+            "Option 3",
+            "Option 4"
+          ],
+          "correctIndex": 0,
+          "topic": "General"
+        },
+        {
+          "id": "q4",
+          "text": "Question 4",
+          "options": [
+            "Option 1",
+            "Option 2",
+            "Option 3",
+            "Option 4"
+          ],
+          "correctIndex": 0,
+          "topic": "General"
+        },
+        {
+          "id": "q5",
+          "text": "Question 5",
+          "options": [
+            "Option 1",
+            "Option 2",
+            "Option 3",
+            "Option 4"
+          ],
+          "correctIndex": 0,
+          "topic": "General"
+        },
+        {
+          "id": "q6",
+          "text": "Question 6",
+          "options": [
+            "Option 1",
+            "Option 2",
+            "Option 3",
+            "Option 4"
+          ],
+          "correctIndex": 0,
+          "topic": "General"
+        },
+        {
+          "id": "q7",
+          "text": "Question 7",
+          "options": [
+            "Option 1",
+            "Option 2",
+            "Option 3",
+            "Option 4"
+          ],
+          "correctIndex": 0,
+          "topic": "General"
+        },
+        {
+          "id": "q8",
+          "text": "Question 8",
+          "options": [
+            "Option 1",
+            "Option 2",
+            "Option 3",
+            "Option 4"
+          ],
+          "correctIndex": 0,
+          "topic": "General"
+        },
+        {
+          "id": "q9",
+          "text": "Question 9",
+          "options": [
+            "Option 1",
+            "Option 2",
+            "Option 3",
+            "Option 4"
+          ],
+          "correctIndex": 0,
+          "topic": "General"
+        },
+        {
+          "id": "q10",
+          "text": "Question 10",
+          "options": [
+            "Option 1",
+            "Option 2",
+            "Option 3",
+            "Option 4"
+          ],
+          "correctIndex": 0,
+          "topic": "General"
+        }
+      ]
+    }
+  ]
+}

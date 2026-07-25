@@ -1,0 +1,26 @@
+{
+  "submissions": [
+    {
+      "testId": "test_seed_001",
+      "startedAt": "2026-07-25T16:15:26.645Z",
+      "submittedAt": "2026-07-25T16:15:36.455Z",
+      "timeTakenSeconds": 10,
+      "answers": [
+        {
+          "questionId": "q2",
+          "selectedIndex": 1,
+          "correct": false,
+          "answeredAt": "2026-07-25T16:15:27.295Z"
+        },
+        {
+          "questionId": "q1",
+          "selectedIndex": 1,
+          "correct": false,
+          "answeredAt": "2026-07-25T16:15:28.464Z"
+        }
+      ],
+      "score": 0,
+      "totalQuestions": 10
+    }
+  ]
+}

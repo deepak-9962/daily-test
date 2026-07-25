@@ -1,36 +1,304 @@
 <!DOCTYPE html>
-<html lang="en">
+<html class="light" lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Admin - Daily Polls</title>
-  <link rel="stylesheet" href="style.css">
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>TestFlow Admin</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<!-- PapaParse for CSV client-side parsing -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+<script id="tailwind-config">
+  tailwind.config = {
+    darkMode:"class",
+    theme:{ extend:{
+      colors:{
+        "primary":"#3525cd","primary-container":"#4f46e5","on-primary":"#ffffff","on-primary-container":"#dad7ff",
+        "primary-fixed":"#e2dfff","on-primary-fixed":"#0f0069","on-primary-fixed-variant":"#3323cc",
+        "secondary":"#5c5f60","secondary-container":"#e1e3e4","on-secondary":"#ffffff","on-secondary-container":"#626566",
+        "tertiary":"#004598","tertiary-container":"#005cc6","on-tertiary":"#ffffff",
+        "background":"#f9f9ff","surface":"#f9f9ff","surface-bright":"#f9f9ff",
+        "surface-container":"#e9edff","surface-container-high":"#e1e8fd","surface-container-highest":"#dce2f7",
+        "surface-container-low":"#f1f3ff","surface-container-lowest":"#ffffff","surface-variant":"#dce2f7","surface-dim":"#d3daef",
+        "on-surface":"#141b2b","on-surface-variant":"#464555","outline":"#777587","outline-variant":"#c7c4d8",
+        "inverse-surface":"#293040","inverse-on-surface":"#edf0ff","inverse-primary":"#c3c0ff","surface-tint":"#4d44e3",
+        "error":"#ba1a1a","error-container":"#ffdad6","on-error":"#ffffff","on-error-container":"#93000a"
+      },
+      borderRadius:{ DEFAULT:"0.25rem", lg:"0.5rem", xl:"0.75rem", full:"9999px" },
+      spacing:{ xs:"4px", sm:"8px", md:"16px", lg:"24px", xl:"40px", gutter:"24px", "container-max":"800px", base:"4px" },
+      fontFamily:{ "headline-lg":["Inter"],"headline-md":["Inter"],"body-md":["Inter"],"body-lg":["Inter"],"label-md":["Inter"],"timer-mono":["JetBrains Mono"] },
+      fontSize:{
+        "headline-lg":["32px",{lineHeight:"1.2",letterSpacing:"-0.02em",fontWeight:"600"}],
+        "headline-md":["20px",{lineHeight:"1.4",fontWeight:"600"}],
+        "body-lg":["18px",{lineHeight:"1.6",fontWeight:"400"}],
+        "body-md":["16px",{lineHeight:"1.6",fontWeight:"400"}],
+        "label-md":["14px",{lineHeight:"1",fontWeight:"500"}],
+        "timer-mono":["18px",{lineHeight:"1",letterSpacing:"0.05em",fontWeight:"500"}]
+      }
+    }}
+  }
+</script>
+<style>
+  .material-symbols-outlined { font-family:'Material Symbols Outlined'; font-weight:normal; font-style:normal; font-size:24px; line-height:1; display:inline-block; white-space:nowrap; -webkit-font-smoothing:antialiased; }
+  ::-webkit-scrollbar { width:8px; } ::-webkit-scrollbar-thumb { background:#dce2f7; border-radius:4px; }
+  .admin-input { width:100%; padding:8px 12px; background:#fff; border:1px solid #c7c4d8; border-radius:0.5rem; font-family:'Inter',sans-serif; font-size:14px; color:#141b2b; outline:none; transition:border-color .2s,box-shadow .2s; }
+  .admin-input:focus { border-color:#3525cd; box-shadow:0 0 0 2px rgba(53,37,205,0.1); }
+  #toast { position:fixed; bottom:24px; right:24px; background:#3525cd; color:white; padding:12px 20px; border-radius:8px; font-size:14px; font-family:'Inter'; font-weight:500; opacity:0; transform:translateY(10px); transition:all .3s; z-index:999; pointer-events:none; }
+  #toast.show { opacity:1; transform:translateY(0); }
+  .nav-item { display:flex; align-items:center; gap:8px; padding:8px 12px; border-radius:8px; font-size:14px; font-weight:500; cursor:pointer; transition:all .15s; width:100%; text-align:left; }
+  .nav-item:hover { background:#e9edff; color:#3525cd; }
+  .nav-item.active { background:#e2dfff; color:#3525cd; }
+  .status-badge { display:inline-flex; align-items:center; padding:2px 10px; border-radius:9999px; font-size:11px; font-weight:600; text-transform:uppercase; letter-spacing:0.05em; }
+  .tab-btn { padding:8px 20px; border-bottom:2px solid transparent; font-size:14px; font-weight:500; color:#464555; cursor:pointer; transition:all .15s; }
+  .tab-btn.active { border-bottom-color:#3525cd; color:#3525cd; }
+  .csv-error-row { background:#fff5f5 !important; }
+  .csv-warning { background:#fffbf0; }
+  .combobox-wrapper { position:relative; }
+  .combobox-dropdown { position:absolute; z-index:100; background:white; border:1px solid #c7c4d8; border-radius:8px; box-shadow:0 4px 12px rgba(0,0,0,0.1); max-height:160px; overflow-y:auto; width:100%; display:none; }
+  .combobox-option { padding:8px 12px; font-size:13px; cursor:pointer; transition:background .1s; }
+  .combobox-option:hover { background:#e9edff; color:#3525cd; }
+</style>
 </head>
-<body>
-  
-  <div id="password-modal">
-    <div class="modal-content">
-      <h2>Admin Login</h2>
-      <p style="color:var(--text-muted); margin-bottom:1rem; font-size:0.9rem;">(Hint: The password is admin123)</p>
-      <input type="password" id="admin-pwd" placeholder="Enter password" autofocus>
-      <button id="login-btn">Access Panel</button>
-    </div>
-  </div>
+<body class="bg-background text-on-surface font-body-md antialiased">
 
-  <div class="container" id="admin-container" style="display:none;">
-    <div class="header-actions">
-      <a href="index.html">← Back to Polls</a>
+<!-- ─── Password Modal ─────────────────────────────────── -->
+<div id="password-modal" class="fixed inset-0 bg-inverse-surface/40 backdrop-blur-sm flex items-center justify-center z-50">
+  <div class="bg-surface-container-lowest border border-outline-variant rounded-xl p-xl max-w-sm w-full mx-md shadow-xl">
+    <div class="flex items-center gap-sm mb-lg">
+      <span class="material-symbols-outlined text-primary">lock</span>
+      <h2 class="text-headline-md font-headline-md">Admin Login</h2>
     </div>
-    <h1>Setup Today's Quiz</h1>
-    <div id="admin-questions">
-      <div class="loading">Loading current questions...</div>
-    </div>
-    <button id="save-btn" class="save-btn">Publish New Quiz</button>
+    <p class="text-body-md text-on-surface-variant mb-lg">Enter your admin password to access the panel.</p>
+    <input type="password" id="admin-pwd" class="admin-input mb-md" placeholder="Password" autofocus/>
+    <p id="login-error" class="hidden text-error text-[12px] mb-sm font-label-md">Incorrect password.</p>
+    <button id="login-btn" class="w-full py-sm px-lg bg-primary-container text-on-primary-container rounded-lg font-headline-md text-[16px] hover:bg-primary hover:text-on-primary transition-colors flex items-center justify-center gap-sm">
+      <span class="material-symbols-outlined text-[18px]">arrow_forward</span> Access Panel
+    </button>
   </div>
-  
-  <div class="toast" id="toast">Changes published successfully!</div>
+</div>
 
-  <script src="admin.js"></script>
+<!-- ─── Main App Layout ───────────────────────────────── -->
+<div id="admin-app" class="hidden flex min-h-screen">
+
+  <!-- Sidebar -->
+  <aside class="w-60 bg-surface-container-lowest border-r border-outline-variant flex flex-col fixed h-full z-40">
+    <div class="px-lg py-md flex items-center gap-sm border-b border-outline-variant">
+      <span class="material-symbols-outlined text-primary">assignment</span>
+      <span class="text-headline-md font-headline-md text-primary">TestFlow</span>
+    </div>
+    <nav class="flex flex-col gap-xs p-sm flex-1 overflow-y-auto">
+      <button onclick="showSection('tests')" id="nav-tests" class="nav-item active">
+        <span class="material-symbols-outlined text-[20px]">list_alt</span> All Tests
+      </button>
+      <button onclick="showSection('create')" id="nav-create" class="nav-item">
+        <span class="material-symbols-outlined text-[20px]">add_circle</span> Create Test
+      </button>
+      <button onclick="showSection('tracker')" id="nav-tracker" class="nav-item">
+        <span class="material-symbols-outlined text-[20px]">monitor_heart</span> Live Tracker
+      </button>
+      <div class="border-t border-outline-variant my-sm"></div>
+      <a href="analytics.html" class="nav-item text-on-surface-variant">
+        <span class="material-symbols-outlined text-[20px]">bar_chart</span> Analytics
+      </a>
+      <a href="index.html" class="nav-item text-on-surface-variant">
+        <span class="material-symbols-outlined text-[20px]">home</span> Participant View
+      </a>
+    </nav>
+  </aside>
+
+  <!-- Main Panel -->
+  <main class="flex-1 ml-60 p-xl overflow-y-auto min-h-screen">
+
+    <!-- ═══ SECTION: ALL TESTS ═══════════════════════════ -->
+    <section id="section-tests">
+      <div class="flex items-center justify-between mb-xl">
+        <div>
+          <h1 class="text-headline-lg font-headline-lg text-on-surface">All Tests</h1>
+          <p class="text-body-md text-on-surface-variant mt-xs">Manage, publish, and archive tests.</p>
+        </div>
+        <button onclick="showSection('create')" class="flex items-center gap-sm px-lg py-sm bg-primary-container text-on-primary-container rounded-lg font-label-md hover:bg-primary hover:text-on-primary transition-colors">
+          <span class="material-symbols-outlined text-[18px]">add</span> New Test
+        </button>
+      </div>
+      <div id="tests-list" class="space-y-sm">
+        <div class="flex items-center gap-sm text-on-surface-variant">
+          <span class="material-symbols-outlined animate-spin">sync</span>
+          <span class="text-body-md">Loading tests...</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- ═══ SECTION: CREATE TEST ═════════════════════════ -->
+    <section id="section-create" class="hidden">
+      <div class="flex items-center justify-between mb-xl">
+        <div>
+          <h1 class="text-headline-lg font-headline-lg text-on-surface">Create Test</h1>
+          <p class="text-body-md text-on-surface-variant mt-xs">Set up a new test manually or via CSV upload.</p>
+        </div>
+      </div>
+
+      <!-- Test Metadata -->
+      <div class="bg-surface-container-lowest border border-outline-variant rounded-xl p-lg mb-lg">
+        <h2 class="text-headline-md font-headline-md text-on-surface mb-md">Test Details</h2>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-md">
+          <div>
+            <label class="block text-label-md font-label-md text-on-surface-variant mb-xs">Test Title *</label>
+            <input type="text" id="test-title" class="admin-input" placeholder="e.g. Daily GK Quiz — 25 Jul"/>
+          </div>
+          <div>
+            <label class="block text-label-md font-label-md text-on-surface-variant mb-xs">Timer (minutes) *</label>
+            <input type="number" id="test-timer" class="admin-input" value="15" min="1" max="180"/>
+          </div>
+        </div>
+      </div>
+
+      <!-- Tab: Manual / CSV -->
+      <div class="bg-surface-container-lowest border border-outline-variant rounded-xl overflow-hidden mb-lg">
+        <div class="flex border-b border-outline-variant px-lg">
+          <button id="tab-manual" class="tab-btn active" onclick="switchTab('manual')">
+            <span class="material-symbols-outlined text-[16px] align-middle mr-xs">edit_note</span> Manual Entry
+          </button>
+          <button id="tab-csv" class="tab-btn" onclick="switchTab('csv')">
+            <span class="material-symbols-outlined text-[16px] align-middle mr-xs">upload_file</span> CSV Upload
+          </button>
+        </div>
+
+        <!-- Manual Entry -->
+        <div id="panel-manual" class="p-lg">
+          <div id="manual-questions" class="space-y-lg"></div>
+          <button onclick="addManualQuestion()" class="mt-lg flex items-center gap-sm text-primary font-label-md hover:underline">
+            <span class="material-symbols-outlined text-[18px]">add_circle</span> Add Question
+          </button>
+        </div>
+
+        <!-- CSV Upload -->
+        <div id="panel-csv" class="hidden p-lg">
+          <!-- Schema hint -->
+          <div class="bg-surface-container-low border border-outline-variant rounded-lg p-md mb-lg">
+            <p class="text-label-md font-label-md text-on-surface-variant mb-sm">Required CSV format (headers case-insensitive):</p>
+            <code class="font-timer-mono text-[12px] text-on-surface-variant bg-surface-container-highest px-sm py-xs rounded">question, optionA, optionB, optionC, optionD, correctAnswer, topic</code>
+            <p class="text-[12px] text-on-surface-variant mt-xs">correctAnswer: A / B / C / D &nbsp;|&nbsp; topic: optional (defaults to "General")</p>
+          </div>
+
+          <!-- Drop zone -->
+          <div id="csv-dropzone" class="border-2 border-dashed border-outline-variant rounded-xl p-xl text-center cursor-pointer hover:border-primary hover:bg-surface-container-low transition-all" onclick="document.getElementById('csv-file').click()">
+            <span class="material-symbols-outlined text-outline text-[40px]">upload_file</span>
+            <p class="text-body-md text-on-surface-variant mt-sm">Drop your CSV file here or <span class="text-primary font-medium">click to browse</span></p>
+            <p class="text-[12px] text-on-surface-variant mt-xs">Or paste CSV text below</p>
+          </div>
+          <input type="file" id="csv-file" accept=".csv,text/csv" class="hidden"/>
+          <textarea id="csv-text" class="admin-input mt-md" rows="5" placeholder="Paste CSV content here..."></textarea>
+          <div class="flex gap-sm mt-md">
+            <button onclick="parseCSV()" class="flex items-center gap-sm px-lg py-sm bg-surface-container text-on-surface rounded-lg font-label-md hover:bg-surface-container-high transition-colors border border-outline-variant">
+              <span class="material-symbols-outlined text-[18px]">preview</span> Preview & Validate
+            </button>
+            <button id="csv-import-btn" onclick="importCSVToManual()" class="hidden flex items-center gap-sm px-lg py-sm bg-primary-container text-on-primary-container rounded-lg font-label-md hover:bg-primary hover:text-on-primary transition-colors">
+              <span class="material-symbols-outlined text-[18px]">check</span> Import to Test
+            </button>
+          </div>
+
+          <!-- Preview Table -->
+          <div id="csv-preview" class="hidden mt-lg overflow-x-auto">
+            <div id="csv-summary" class="mb-md"></div>
+            <table class="w-full text-[13px] border-collapse">
+              <thead>
+                <tr class="bg-surface-container-high text-on-surface-variant text-left">
+                  <th class="px-sm py-xs border border-outline-variant font-label-md">#</th>
+                  <th class="px-sm py-xs border border-outline-variant font-label-md">Question</th>
+                  <th class="px-sm py-xs border border-outline-variant font-label-md">A</th>
+                  <th class="px-sm py-xs border border-outline-variant font-label-md">B</th>
+                  <th class="px-sm py-xs border border-outline-variant font-label-md">C</th>
+                  <th class="px-sm py-xs border border-outline-variant font-label-md">D</th>
+                  <th class="px-sm py-xs border border-outline-variant font-label-md">Correct</th>
+                  <th class="px-sm py-xs border border-outline-variant font-label-md">Topic</th>
+                  <th class="px-sm py-xs border border-outline-variant font-label-md">Status</th>
+                </tr>
+              </thead>
+              <tbody id="csv-table-body"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- Questions preview for manual (shown after adding) -->
+      <div id="questions-summary" class="hidden bg-surface-container-low border border-outline-variant rounded-lg px-lg py-sm mb-lg">
+        <span id="questions-count-label" class="text-label-md font-label-md text-on-surface-variant"></span>
+      </div>
+
+      <!-- Save / Publish Buttons -->
+      <div class="flex gap-sm flex-wrap">
+        <button id="save-draft-btn" onclick="saveDraft()" class="flex items-center gap-sm px-lg py-sm border border-outline-variant text-on-surface rounded-lg font-label-md hover:bg-surface-container transition-colors">
+          <span class="material-symbols-outlined text-[18px]">save</span> Save as Draft
+        </button>
+        <button id="save-publish-btn" onclick="saveAndPublish()" class="flex items-center gap-sm px-lg py-sm bg-primary-container text-on-primary-container rounded-lg font-label-md hover:bg-primary hover:text-on-primary transition-colors shadow-sm">
+          <span class="material-symbols-outlined text-[18px]">publish</span> Save & Publish
+        </button>
+      </div>
+    </section>
+
+    <!-- ═══ SECTION: EDIT TEST ════════════════════════════ -->
+    <section id="section-edit" class="hidden">
+      <div class="flex items-center gap-sm mb-xl">
+        <button onclick="showSection('tests')" class="flex items-center gap-sm text-on-surface-variant hover:text-primary transition-colors font-label-md">
+          <span class="material-symbols-outlined text-[18px]">arrow_back</span> Back
+        </button>
+      </div>
+      <div class="flex items-center justify-between mb-lg">
+        <h1 class="text-headline-lg font-headline-lg">Edit Test</h1>
+        <div class="flex gap-sm">
+          <button id="edit-save-btn" onclick="saveEdit()" class="flex items-center gap-sm px-lg py-sm border border-outline-variant text-on-surface rounded-lg font-label-md hover:bg-surface-container transition-colors">
+            <span class="material-symbols-outlined text-[18px]">save</span> Save Draft
+          </button>
+          <button id="edit-publish-btn" onclick="publishCurrentEdit()" class="flex items-center gap-sm px-lg py-sm bg-primary-container text-on-primary-container rounded-lg font-label-md hover:bg-primary hover:text-on-primary transition-colors">
+            <span class="material-symbols-outlined text-[18px]">publish</span> Publish
+          </button>
+        </div>
+      </div>
+
+      <div class="bg-surface-container-lowest border border-outline-variant rounded-xl p-lg mb-lg">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-md">
+          <div>
+            <label class="block text-label-md font-label-md text-on-surface-variant mb-xs">Title</label>
+            <input type="text" id="edit-title" class="admin-input"/>
+          </div>
+          <div>
+            <label class="block text-label-md font-label-md text-on-surface-variant mb-xs">Timer (minutes)</label>
+            <input type="number" id="edit-timer" class="admin-input" min="1" max="180"/>
+          </div>
+        </div>
+      </div>
+
+      <div id="edit-questions" class="space-y-lg"></div>
+      <button onclick="addEditQuestion()" class="mt-lg flex items-center gap-sm text-primary font-label-md hover:underline">
+        <span class="material-symbols-outlined text-[18px]">add_circle</span> Add Question
+      </button>
+    </section>
+
+    <!-- ═══ SECTION: LIVE TRACKER ═════════════════════════ -->
+    <section id="section-tracker" class="hidden">
+      <div class="flex items-center justify-between mb-xl">
+        <div>
+          <h1 class="text-headline-lg font-headline-lg">Live Tracker</h1>
+          <p class="text-body-md text-on-surface-variant mt-xs">Real-time status of the current test attempt.</p>
+        </div>
+        <button onclick="loadTracker()" class="flex items-center gap-sm px-md py-sm border border-outline-variant rounded-lg font-label-md text-on-surface-variant hover:bg-surface-container transition-colors">
+          <span class="material-symbols-outlined text-[18px]">refresh</span> Refresh
+        </button>
+      </div>
+      <div id="tracker-content">
+        <div class="flex items-center gap-sm text-on-surface-variant">
+          <span class="material-symbols-outlined animate-spin">sync</span>
+          <span class="text-body-md">Loading tracker...</span>
+        </div>
+      </div>
+    </section>
+
+  </main>
+</div>
+
+<div id="toast">✓ Action completed!</div>
+
+<script src="admin.js"></script>
 </body>
 </html>

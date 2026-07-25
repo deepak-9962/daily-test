@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html class="light" lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>TestFlow — Test Detail</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+  tailwind.config={darkMode:"class",theme:{extend:{colors:{"primary":"#3525cd","primary-container":"#4f46e5","on-primary":"#ffffff","on-primary-container":"#dad7ff","primary-fixed":"#e2dfff","background":"#f9f9ff","surface":"#f9f9ff","surface-container":"#e9edff","surface-container-high":"#e1e8fd","surface-container-highest":"#dce2f7","surface-container-low":"#f1f3ff","surface-container-lowest":"#ffffff","surface-variant":"#dce2f7","on-surface":"#141b2b","on-surface-variant":"#464555","outline":"#777587","outline-variant":"#c7c4d8","inverse-surface":"#293040","error":"#ba1a1a","error-container":"#ffdad6"},borderRadius:{DEFAULT:"0.25rem",lg:"0.5rem",xl:"0.75rem",full:"9999px"},spacing:{xs:"4px",sm:"8px",md:"16px",lg:"24px",xl:"40px"},fontFamily:{"headline-lg":["Inter"],"headline-md":["Inter"],"body-md":["Inter"],"body-lg":["Inter"],"label-md":["Inter"],"timer-mono":["JetBrains Mono"]},fontSize:{"headline-lg":["32px",{lineHeight:"1.2",letterSpacing:"-0.02em",fontWeight:"600"}],"headline-md":["20px",{lineHeight:"1.4",fontWeight:"600"}],"body-md":["16px",{lineHeight:"1.6",fontWeight:"400"}],"label-md":["14px",{lineHeight:"1",fontWeight:"500"}],"timer-mono":["18px",{lineHeight:"1",letterSpacing:"0.05em",fontWeight:"500"}]}}}}
+</script>
+<style>
+  .material-symbols-outlined{font-family:'Material Symbols Outlined';font-weight:normal;font-style:normal;font-size:24px;line-height:1;display:inline-block;white-space:nowrap;-webkit-font-smoothing:antialiased;}
+</style>
+</head>
+<body class="bg-background text-on-surface font-body-md antialiased">
+<div class="max-w-[800px] mx-auto px-lg py-xl">
+  <div class="flex items-center gap-sm mb-xl">
+    <a href="analytics.html" class="flex items-center gap-xs text-on-surface-variant hover:text-primary transition-colors font-label-md">
+      <span class="material-symbols-outlined text-[18px]">arrow_back</span> Analytics
+    </a>
+  </div>
+  <div id="content">
+    <div class="flex items-center gap-sm text-on-surface-variant">
+      <span class="material-symbols-outlined animate-spin">sync</span>
+      <span class="text-body-md">Loading test detail...</span>
+    </div>
+  </div>
+</div>
+<script>
+const LETTERS=['A','B','C','D'];
+const params=new URLSearchParams(window.location.search);
+const testId=params.get('id');
+
+function escHtml(s){if(!s)return'';return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+
+async function load(){
+  if(!testId){document.getElementById('content').innerHTML='<p class="text-error">No test ID provided.</p>';return;}
+  try{
+    const res=await fetch(`/api/analytics/test/${encodeURIComponent(testId)}`);
+    const data=await res.json();
+    if(!res.ok)throw new Error(data.error);
+    render(data);
+  }catch(e){document.getElementById('content').innerHTML=`<p class="text-error">${escHtml(e.message)}</p>`;}
+}
+
+function render({test,submission,detail}){
+  const score=submission?submission.score:0;
+  const total=test?detail.length:0;
+  const pct=total?Math.round(score/total*100):0;
+  const fmtTime=s=>{if(!s)return'—';const m=Math.floor(s/60);return`${m}m ${s%60}s`;};
+  const date=submission?.submittedAt?new Date(submission.submittedAt).toLocaleDateString('en-IN',{day:'numeric',month:'long',year:'numeric',hour:'2-digit',minute:'2-digit'}):'—';
+
+  document.getElementById('content').innerHTML=`
+    <h1 class="text-headline-lg font-headline-lg text-on-surface mb-xs">${escHtml(test.title)}</h1>
+    <p class="text-on-surface-variant text-body-md mb-xl">${date}</p>
+    <div class="grid grid-cols-3 gap-md mb-xl">
+      <div class="bg-surface border border-outline-variant rounded-xl p-md text-center">
+        <p class="text-[11px] font-label-md text-on-surface-variant uppercase tracking-widest mb-xs">Score</p>
+        <p class="text-headline-md font-headline-md text-primary">${score}/${total}</p>
+      </div>
+      <div class="bg-surface border border-outline-variant rounded-xl p-md text-center">
+        <p class="text-[11px] font-label-md text-on-surface-variant uppercase tracking-widest mb-xs">Accuracy</p>
+        <p class="text-headline-md font-headline-md text-primary">${pct}%</p>
+      </div>
+      <div class="bg-surface border border-outline-variant rounded-xl p-md text-center">
+        <p class="text-[11px] font-label-md text-on-surface-variant uppercase tracking-widest mb-xs">Time Taken</p>
+        <p class="text-headline-md font-headline-md text-primary font-timer-mono">${fmtTime(submission?.timeTakenSeconds)}</p>
+      </div>
+    </div>
+    <h2 class="text-headline-md font-headline-md mb-md">Question Breakdown</h2>
+    <div class="space-y-sm">
+      ${detail.map((q,i)=>{
+        const correct=q.correct;
+        const hasAns=q.selectedIndex!==null;
+        return `
+          <div class="bg-surface border-2 ${correct?'border-green-200':hasAns?'border-error':'border-outline-variant'} rounded-xl overflow-hidden">
+            <div class="p-md flex items-center justify-between gap-md ${!correct&&hasAns?'border-b border-outline-variant':''}">
+              <div class="flex items-center gap-md flex-1 min-w-0">
+                <span class="text-label-md font-label-md ${correct?'text-green-700':hasAns?'text-error':'text-on-surface-variant'} w-6 flex-shrink-0">${String(i+1).padStart(2,'0')}</span>
+                <span class="text-body-md text-on-surface">${escHtml(q.text)}</span>
+              </div>
+              <span class="material-symbols-outlined flex-shrink-0 ${correct?'text-green-600':hasAns?'text-error':'text-on-surface-variant'}" style="font-variation-settings:'FILL' 1;">${correct?'check_circle':hasAns?'cancel':'radio_button_unchecked'}</span>
+            </div>
+            ${!correct&&hasAns?`
+              <div class="p-md bg-error-container/10 space-y-sm">
+                <div class="flex items-center gap-sm">
+                  <span class="material-symbols-outlined text-error text-[16px]">close</span>
+                  <span class="text-[12px] text-error font-label-md">Your answer:</span>
+                  <span class="text-[13px] text-on-surface">${escHtml(q.options[q.selectedIndex])} (${LETTERS[q.selectedIndex]})</span>
+                </div>
+                <div class="flex items-center gap-sm">
+                  <span class="material-symbols-outlined text-green-700 text-[16px]">check</span>
+                  <span class="text-[12px] text-green-700 font-label-md">Correct answer:</span>
+                  <span class="text-[13px] text-on-surface">${escHtml(q.options[q.correctIndex])} (${LETTERS[q.correctIndex]})</span>
+                </div>
+              </div>`:hasAns?'':`
+              <div class="p-md bg-surface-container">
+                <p class="text-[12px] text-on-surface-variant">Not answered · Correct: ${escHtml(q.options[q.correctIndex])} (${LETTERS[q.correctIndex]})</p>
+              </div>`}
+          </div>`;
+      }).join('')}
+    </div>`;
+}
+load();
+</script>
+</body>
+</html>
