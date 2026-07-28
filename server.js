@@ -70,16 +70,29 @@ let mongoDb = null;
 let isSeeded = false;
 
 async function getMongoDb() {
-  if (mongoDb) return mongoDb;
-  if (!MONGODB_URI) {
-    return null;
-  }
-  try {
-    if (!mongoClient) {
-      mongoClient = new MongoClient(MONGODB_URI);
-      await mongoClient.connect();
-      console.log('⚡ Connected to MongoDB Atlas Cloud!');
+  if (!MONGODB_URI) return null;
+
+  // If we have a cached connection, verify it is still alive
+  if (mongoDb && mongoClient) {
+    try {
+      await mongoClient.db('admin').command({ ping: 1 });
+      return mongoDb;
+    } catch (_) {
+      // Topology closed or connection dropped — reset and reconnect
+      console.log('🔄 MongoDB connection lost, reconnecting...');
+      mongoClient = null;
+      mongoDb = null;
     }
+  }
+
+  try {
+    mongoClient = new MongoClient(MONGODB_URI, {
+      maxPoolSize: 10,
+      serverSelectionTimeoutMS: 5000,
+      socketTimeoutMS: 45000,
+    });
+    await mongoClient.connect();
+    console.log('⚡ Connected to MongoDB Atlas Cloud!');
     mongoDb = mongoClient.db('daily-poll');
     if (!isSeeded) {
       await seedCloudDb(mongoDb);
@@ -88,6 +101,8 @@ async function getMongoDb() {
     return mongoDb;
   } catch (err) {
     console.error('⚠️ MongoDB Atlas connection error, falling back to local files:', err.message);
+    mongoClient = null;
+    mongoDb = null;
     return null;
   }
 }

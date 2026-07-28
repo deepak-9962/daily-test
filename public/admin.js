@@ -50,7 +50,8 @@ async function init() {
 async function loadTopics() {
   try {
     const res = await fetch('/api/topics');
-    existingTopics = await res.json();
+    const data = await res.json();
+    existingTopics = Array.isArray(data) ? data : [];
   } catch (e) { existingTopics = []; }
 }
 
