@@ -342,6 +342,7 @@ async function saveDraft() {
     if (!res.ok) { alert('Failed to save — check password.'); return; }
     const data = await res.json();
     showToast('Draft saved!');
+    resetCreateForm();
     showSection('tests');
   } catch (e) { alert('Error saving draft.'); }
 }
@@ -373,6 +374,15 @@ async function saveAndPublish() {
 }
 
 function getCreateFormData() {
+  // Auto-import CSV questions if CSV was parsed but user clicked Save/Publish directly
+  if (typeof csvParsedRows !== 'undefined' && csvParsedRows.length > 0) {
+    const manualQs = collectManualQuestions();
+    const isManualEmpty = manualQs.length === 0 || manualQs.every(q => !q.text && q.options.every(o => !o));
+    const isCsvTabActive = !document.getElementById('panel-csv').classList.contains('hidden');
+    if (isCsvTabActive || isManualEmpty) {
+      importCSVToManual();
+    }
+  }
   return {
     title: document.getElementById('test-title').value.trim(),
     timerMinutes: parseInt(document.getElementById('test-timer').value) || 15,
