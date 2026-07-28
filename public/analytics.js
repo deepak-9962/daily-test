@@ -6,12 +6,26 @@ let scoreChart = null;
 let topicChart = null;
 
 // ─── Auth ─────────────────────────────────────────────────────────
+document.addEventListener('DOMContentLoaded', checkAutoAuth);
+
+function checkAutoAuth() {
+  const savedAuth = sessionStorage.getItem('admin_authenticated');
+  if (savedAuth === 'true') {
+    document.getElementById('password-modal').style.display = 'none';
+    document.getElementById('analytics-app').classList.remove('hidden');
+    document.getElementById('analytics-app').classList.add('flex');
+    loadAnalytics();
+  }
+}
+
 document.getElementById('login-btn').addEventListener('click', tryLogin);
 document.getElementById('admin-pwd').addEventListener('keypress', e => { if (e.key === 'Enter') tryLogin(); });
 
 function tryLogin() {
   const pwd = document.getElementById('admin-pwd').value;
   if (!pwd) return;
+  sessionStorage.setItem('admin_password', pwd);
+  sessionStorage.setItem('admin_authenticated', 'true');
   document.getElementById('password-modal').style.display = 'none';
   document.getElementById('analytics-app').classList.remove('hidden');
   document.getElementById('analytics-app').classList.add('flex');

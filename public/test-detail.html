@@ -76,29 +76,30 @@ function render({test,submission,detail}){
         const hasAns=q.selectedIndex!==null;
         return `
           <div class="bg-surface border-2 ${correct?'border-green-200':hasAns?'border-error':'border-outline-variant'} rounded-xl overflow-hidden">
-            <div class="p-md flex items-center justify-between gap-md ${!correct&&hasAns?'border-b border-outline-variant':''}">
+            <div class="p-md flex items-center justify-between gap-md border-b border-outline-variant">
               <div class="flex items-center gap-md flex-1 min-w-0">
                 <span class="text-label-md font-label-md ${correct?'text-green-700':hasAns?'text-error':'text-on-surface-variant'} w-6 flex-shrink-0">${String(i+1).padStart(2,'0')}</span>
                 <span class="text-body-md text-on-surface">${escHtml(q.text)}</span>
               </div>
               <span class="material-symbols-outlined flex-shrink-0 ${correct?'text-green-600':hasAns?'text-error':'text-on-surface-variant'}" style="font-variation-settings:'FILL' 1;">${correct?'check_circle':hasAns?'cancel':'radio_button_unchecked'}</span>
             </div>
-            ${!correct&&hasAns?`
-              <div class="p-md bg-error-container/10 space-y-sm">
+            <div class="p-md ${correct?'bg-green-50':'bg-error-container/10'} space-y-sm">
+              ${hasAns?`
                 <div class="flex items-center gap-sm">
-                  <span class="material-symbols-outlined text-error text-[16px]">close</span>
-                  <span class="text-[12px] text-error font-label-md">Your answer:</span>
+                  <span class="material-symbols-outlined ${correct?'text-green-600':'text-error'} text-[16px]">${correct?'check':'close'}</span>
+                  <span class="text-[12px] ${correct?'text-green-700':'text-error'} font-label-md">Your answer:</span>
                   <span class="text-[13px] text-on-surface">${escHtml(q.options[q.selectedIndex])} (${LETTERS[q.selectedIndex]})</span>
-                </div>
+                </div>`:`
                 <div class="flex items-center gap-sm">
-                  <span class="material-symbols-outlined text-green-700 text-[16px]">check</span>
-                  <span class="text-[12px] text-green-700 font-label-md">Correct answer:</span>
-                  <span class="text-[13px] text-on-surface">${escHtml(q.options[q.correctIndex])} (${LETTERS[q.correctIndex]})</span>
-                </div>
-              </div>`:hasAns?'':`
-              <div class="p-md bg-surface-container">
-                <p class="text-[12px] text-on-surface-variant">Not answered · Correct: ${escHtml(q.options[q.correctIndex])} (${LETTERS[q.correctIndex]})</p>
-              </div>`}
+                  <span class="material-symbols-outlined text-on-surface-variant text-[16px]">remove_circle</span>
+                  <span class="text-[12px] text-on-surface-variant font-label-md">Not answered</span>
+                </div>`}
+              <div class="flex items-center gap-sm">
+                <span class="material-symbols-outlined text-green-700 text-[16px]">check</span>
+                <span class="text-[12px] text-green-700 font-label-md">Correct answer:</span>
+                <span class="text-[13px] text-on-surface font-medium">${escHtml(q.options[q.correctIndex])} (${LETTERS[q.correctIndex]})</span>
+              </div>
+            </div>
           </div>`;
       }).join('')}
     </div>`;

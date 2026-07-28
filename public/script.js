@@ -259,63 +259,16 @@ function showResults(data) {
   timerWrapper.classList.add('hidden');
   timerEl.textContent = 'Completed';
 
-  const score = data.score;
-  const total = data.totalQuestions;
-  const pct = total > 0 ? Math.round((score / total) * 100) : 0;
   const mins = Math.floor((data.timeTakenSeconds || 0) / 60);
   const secs = (data.timeTakenSeconds || 0) % 60;
+  const total = data.totalQuestions || totalQuestions;
+  const answered = data.answeredCount !== undefined ? data.answeredCount : answeredCount;
 
-  document.getElementById('result-score').textContent = `${score} / ${total}`;
-  document.getElementById('result-score-pct').textContent = `You scored ${pct}% accuracy.`;
-  document.getElementById('result-time').textContent = `⏱ Time taken: ${mins}m ${secs}s`;
-  setTimeout(() => { document.getElementById('result-score-bar').style.width = `${pct}%`; }, 100);
+  const resultTimeEl = document.getElementById('result-time');
+  if (resultTimeEl) resultTimeEl.textContent = `⏱ Time taken: ${mins}m ${secs}s`;
 
-  const list = document.getElementById('results-list');
-  list.innerHTML = '';
-
-  (data.answers || []).forEach((ans, i) => {
-    const correct = ans.correct;
-    const div = document.createElement('div');
-
-    if (correct) {
-      div.className = 'bg-surface border border-outline-variant rounded-lg p-md flex items-center justify-between hover:bg-surface-container-low transition-all gap-md';
-      div.innerHTML = `
-        <div class="flex items-center gap-md flex-1 min-w-0">
-          <span class="text-label-md font-label-md text-on-surface-variant w-6 flex-shrink-0">${String(i+1).padStart(2,'0')}</span>
-          <span class="text-body-md text-on-surface truncate">${escHtml(ans.questionText || '')}</span>
-        </div>
-        <span class="material-symbols-outlined text-green-600 flex-shrink-0" style="font-variation-settings:'FILL' 1;">check_circle</span>`;
-    } else {
-      div.className = 'bg-surface border-2 border-error rounded-lg overflow-hidden';
-      const pickedLetter = ans.selectedIndex !== null ? LETTERS[ans.selectedIndex] : '—';
-      const correctLetter = LETTERS[ans.correctIndex];
-      div.innerHTML = `
-        <div class="p-md flex items-center justify-between gap-md border-b border-outline-variant">
-          <div class="flex items-center gap-md flex-1 min-w-0">
-            <span class="text-label-md font-label-md text-error w-6 flex-shrink-0">${String(i+1).padStart(2,'0')}</span>
-            <span class="text-body-md text-on-surface font-semibold truncate">${escHtml(ans.questionText || '')}</span>
-          </div>
-          <span class="material-symbols-outlined text-error flex-shrink-0" style="font-variation-settings:'FILL' 1;">cancel</span>
-        </div>
-        <div class="p-md bg-error-container/10 space-y-sm">
-          <div class="flex items-center gap-sm">
-            <span class="material-symbols-outlined text-error text-[18px]">close</span>
-            <div>
-              <p class="text-label-md font-label-md text-error text-[11px]">Your answer</p>
-              <p class="text-body-md text-on-surface">${ans.selectedIndex !== null ? escHtml(ans.options[ans.selectedIndex]) : 'Not answered'} ${ans.selectedIndex !== null ? `(${pickedLetter})` : ''}</p>
-            </div>
-          </div>
-          <div class="flex items-center gap-sm">
-            <span class="material-symbols-outlined text-green-700 text-[18px]">check</span>
-            <div>
-              <p class="text-label-md font-label-md text-green-700 text-[11px]">Correct answer</p>
-              <p class="text-body-md text-on-surface">${escHtml(ans.options[ans.correctIndex])} (${correctLetter})</p>
-            </div>
-          </div>
-        </div>`;
-    }
-    list.appendChild(div);
-  });
+  const resultCountEl = document.getElementById('result-answered-count');
+  if (resultCountEl) resultCountEl.textContent = `📝 Answered ${answered} of ${total} question${total !== 1 ? 's' : ''}`;
 
   show(resultsScreen);
 }
@@ -323,15 +276,16 @@ function showResults(data) {
 function showBasicCompletion() {
   hide(questionsContainer);
   footerAction.classList.add('hidden');
-  resultsScreen.innerHTML = `
-    <div class="text-center p-xl bg-surface border border-outline-variant rounded-xl space-y-md">
-      <span class="material-symbols-outlined text-primary text-[40px]">check_circle</span>
-      <h2 class="text-headline-md font-headline-md text-on-surface">Test Submitted!</h2>
-      <p class="text-body-md text-on-surface-variant">You answered ${answeredCount} out of ${totalQuestions} questions.</p>
-      <a href="index.html" class="inline-flex items-center gap-sm mt-md px-lg py-sm rounded-lg border border-outline-variant text-label-md hover:bg-surface-container transition-colors">
-        <span class="material-symbols-outlined text-[18px]">refresh</span> Back to Home
-      </a>
-    </div>`;
+  timerWrapper.classList.remove('flex');
+  timerWrapper.classList.add('hidden');
+  timerEl.textContent = 'Completed';
+
+  const resultTimeEl = document.getElementById('result-time');
+  if (resultTimeEl) resultTimeEl.textContent = `⏱ Time taken: Finished`;
+
+  const resultCountEl = document.getElementById('result-answered-count');
+  if (resultCountEl) resultCountEl.textContent = `📝 Answered ${answeredCount} of ${totalQuestions} question${totalQuestions !== 1 ? 's' : ''}`;
+
   show(resultsScreen);
 }
 

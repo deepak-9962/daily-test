@@ -12,6 +12,19 @@ let editQuestionCount = 0;
 const LETTERS = ['A', 'B', 'C', 'D'];
 
 // ─── Auth ────────────────────────────────────────────────────────
+document.addEventListener('DOMContentLoaded', checkAutoAuth);
+
+function checkAutoAuth() {
+  const savedPwd = sessionStorage.getItem('admin_password');
+  if (savedPwd) {
+    adminPassword = savedPwd;
+    document.getElementById('password-modal').style.display = 'none';
+    document.getElementById('admin-app').classList.remove('hidden');
+    document.getElementById('admin-app').classList.add('flex');
+    init();
+  }
+}
+
 document.getElementById('login-btn').addEventListener('click', tryLogin);
 document.getElementById('admin-pwd').addEventListener('keypress', e => { if (e.key === 'Enter') tryLogin(); });
 
@@ -19,6 +32,8 @@ function tryLogin() {
   const pwd = document.getElementById('admin-pwd').value;
   if (!pwd) return;
   adminPassword = pwd;
+  sessionStorage.setItem('admin_password', pwd);
+  sessionStorage.setItem('admin_authenticated', 'true');
   document.getElementById('password-modal').style.display = 'none';
   document.getElementById('admin-app').classList.remove('hidden');
   document.getElementById('admin-app').classList.add('flex');

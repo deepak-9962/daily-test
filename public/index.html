@@ -114,29 +114,25 @@
   <div id="questions-container" class="hidden flex-col gap-xl pt-xl"></div>
 
   <!-- Results Screen (after submit) -->
-  <div id="results-screen" class="hidden flex-col gap-xl pt-xl">
-    <!-- Hero Score -->
-    <section class="text-center p-xl bg-surface border border-outline-variant rounded-xl">
-      <h2 class="text-label-md font-label-md text-on-surface-variant uppercase tracking-widest mb-md">Test Completed</h2>
-      <div class="flex flex-col items-center">
-        <span id="result-score" class="text-headline-lg font-headline-lg text-primary mb-sm">— / —</span>
-        <div class="w-full max-w-xs h-1 bg-surface-container rounded-full overflow-hidden">
-          <div id="result-score-bar" class="bg-primary h-full transition-all duration-700" style="width:0%"></div>
-        </div>
-        <p id="result-score-pct" class="mt-md text-body-md text-on-surface-variant"></p>
-        <p id="result-time" class="text-timer-mono text-[14px] text-on-surface-variant mt-xs"></p>
+  <div id="results-screen" class="hidden flex-col items-center gap-lg pt-xl text-center">
+    <div class="w-full bg-surface border border-outline-variant rounded-xl p-xl space-y-md flex flex-col items-center">
+      <div class="w-16 h-16 rounded-full bg-emerald-100 border border-emerald-300 flex items-center justify-center text-emerald-600 mb-xs">
+        <span class="material-symbols-outlined text-[36px]">check_circle</span>
       </div>
-    </section>
-
-    <!-- Question Review -->
-    <section>
-      <h3 class="text-label-md font-label-md text-on-surface-variant uppercase tracking-widest mb-md">Question Review</h3>
-      <div id="results-list" class="space-y-sm"></div>
-    </section>
-
-    <a href="index.html" class="self-start flex items-center gap-sm px-lg py-sm rounded-lg border border-outline-variant text-label-md font-label-md text-on-surface hover:bg-surface-container transition-colors w-fit">
-      <span class="material-symbols-outlined text-[18px]">refresh</span> Back to Home
-    </a>
+      <h2 class="text-headline-lg font-headline-lg text-on-surface">Test Submitted Successfully!</h2>
+      <p class="text-body-md text-on-surface-variant max-w-md mx-auto">
+        Your answers have been recorded. Test marks and results are managed by the teacher/admin and are not visible to participants.
+      </p>
+      <div class="py-md px-lg bg-surface-container rounded-lg text-left text-body-md text-on-surface-variant space-y-xs w-full max-w-xs border border-outline-variant">
+        <p id="result-time" class="text-timer-mono text-[14px] text-on-surface flex items-center gap-xs">⏱ Time taken: --</p>
+        <p id="result-answered-count" class="text-label-md text-on-surface-variant flex items-center gap-xs">📝 Questions answered: --</p>
+      </div>
+      <div class="pt-md">
+        <a href="index.html" class="inline-flex items-center gap-sm px-lg py-sm rounded-lg bg-primary-container text-on-primary-container font-headline-md text-label-md hover:bg-primary hover:text-on-primary transition-colors">
+          <span class="material-symbols-outlined text-[18px]">refresh</span> Back to Home
+        </a>
+      </div>
+    </div>
   </div>
 
 </main>

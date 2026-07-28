@@ -1,6 +1,9 @@
+require('dotenv').config();
 const express = require('express');
 const fs = require('fs');
 const path = require('path');
+const { MongoClient } = require('mongodb');
+
 const app = express();
 const PORT = process.env.PORT || 3000;
 
@@ -11,7 +14,7 @@ app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
 
-// ─── File Paths (Vercel-safe fallback to /tmp if read-only) ────────────────
+// ─── File Paths (Local Backup Fallback) ─────────────────────────────────────
 const DB_DIR = process.env.VERCEL ? '/tmp' : path.join(__dirname, 'db');
 const TESTS_FILE = path.join(DB_DIR, 'tests.json');
 const SUBS_FILE  = path.join(DB_DIR, 'submissions.json');
@@ -43,22 +46,117 @@ function ensureDbFiles() {
   }
 }
 
-// ─── DB Helpers ────────────────────────────────────────────────────────────
-function readTests() {
+function readTestsFromFile() {
   ensureDbFiles();
   return JSON.parse(fs.readFileSync(TESTS_FILE, 'utf8'));
 }
-function writeTests(data) {
+function writeTestsToFile(data) {
   ensureDbFiles();
-  fs.writeFileSync(TESTS_FILE, JSON.stringify(data, null, 2));
+  try { fs.writeFileSync(TESTS_FILE, JSON.stringify(data, null, 2)); } catch (e) {}
 }
-function readSubs() {
+function readSubsFromFile() {
   ensureDbFiles();
   return JSON.parse(fs.readFileSync(SUBS_FILE, 'utf8'));
 }
-function writeSubs(data) {
+function writeSubsToFile(data) {
   ensureDbFiles();
-  fs.writeFileSync(SUBS_FILE, JSON.stringify(data, null, 2));
+  try { fs.writeFileSync(SUBS_FILE, JSON.stringify(data, null, 2)); } catch (e) {}
+}
+
+// ─── MongoDB Atlas Integration ─────────────────────────────────────────────
+const MONGODB_URI = process.env.MONGODB_URI;
+let mongoClient = null;
+let mongoDb = null;
+let isSeeded = false;
+
+async function getMongoDb() {
+  if (mongoDb) return mongoDb;
+  if (!MONGODB_URI) {
+    return null;
+  }
+  try {
+    if (!mongoClient) {
+      mongoClient = new MongoClient(MONGODB_URI);
+      await mongoClient.connect();
+      console.log('⚡ Connected to MongoDB Atlas Cloud!');
+    }
+    mongoDb = mongoClient.db('daily-poll');
+    if (!isSeeded) {
+      await seedCloudDb(mongoDb);
+      isSeeded = true;
+    }
+    return mongoDb;
+  } catch (err) {
+    console.error('⚠️ MongoDB Atlas connection error, falling back to local files:', err.message);
+    return null;
+  }
+}
+
+async function seedCloudDb(db) {
+  try {
+    const testsCount = await db.collection('tests').countDocuments();
+    if (testsCount === 0) {
+      const fileData = readTestsFromFile();
+      if (fileData.tests && fileData.tests.length > 0) {
+        await db.collection('tests').insertMany(fileData.tests);
+        console.log(`🌱 Seeded ${fileData.tests.length} tests to MongoDB Cloud`);
+      }
+    }
+    const subsCount = await db.collection('submissions').countDocuments();
+    if (subsCount === 0) {
+      const fileSubs = readSubsFromFile();
+      if (fileSubs.submissions && fileSubs.submissions.length > 0) {
+        await db.collection('submissions').insertMany(fileSubs.submissions);
+        console.log(`🌱 Seeded ${fileSubs.submissions.length} submissions to MongoDB Cloud`);
+      }
+    }
+  } catch (e) {
+    console.error('Failed to seed cloud database:', e.message);
+  }
+}
+
+async function readTests() {
+  const db = await getMongoDb();
+  if (db) {
+    const tests = await db.collection('tests').find({}, { projection: { _id: 0 } }).toArray();
+    return { tests };
+  }
+  return readTestsFromFile();
+}
+
+async function writeTests(data) {
+  writeTestsToFile(data);
+  const db = await getMongoDb();
+  if (db) {
+    const col = db.collection('tests');
+    await col.deleteMany({});
+    if (data.tests && data.tests.length > 0) {
+      const cleanTests = data.tests.map(({ _id, ...rest }) => rest);
+      await col.insertMany(cleanTests);
+    }
+  }
+}
+
+async function readSubs() {
+  const db = await getMongoDb();
+  if (db) {
+    const submissions = await db.collection('submissions').find({}, { projection: { _id: 0 } }).toArray();
+    return { submissions };
+  }
+  return readSubsFromFile();
+}
+
+async function writeSubs(data) {
+  writeSubsToFile(data);
+  const db = await getMongoDb();
+  if (db) {
+    const col = db.collection('submissions');
+    await col.deleteMany({});
+    if (data.submissions && data.submissions.length > 0) {
+      const cleanSubs = data.submissions.map(({ _id, ...rest }) => rest);
+      await col.insertMany(cleanSubs);
+    }
+  }
 }
 
 // ─── Admin Auth Middleware ─────────────────────────────────────────────────
@@ -81,9 +179,9 @@ function newId(prefix) {
 // ══════════════════════════════════════════════════════════════════════════
 
 // GET /api/tests/current — Returns published/active test or null
-app.get('/api/tests/current', (req, res) => {
+app.get('/api/tests/current', async (req, res) => {
   try {
-    const { tests } = readTests();
+    const { tests } = await readTests();
     const current = tests.find(t => t.status === 'published' || t.status === 'active');
     res.json(current || null);
   } catch (e) {
@@ -92,10 +190,9 @@ app.get('/api/tests/current', (req, res) => {
 });
 
 // GET /api/tests — List all tests (admin)
-app.get('/api/tests', (req, res) => {
+app.get('/api/tests', async (req, res) => {
   try {
-    const { tests } = readTests();
-    // Return tests without full questions for list view
+    const { tests } = await readTests();
     const list = tests.map(t => ({
       id: t.id,
       title: t.title,
@@ -111,9 +208,9 @@ app.get('/api/tests', (req, res) => {
 });
 
 // GET /api/tests/:id — Get single test by id
-app.get('/api/tests/:id', (req, res) => {
+app.get('/api/tests/:id', async (req, res) => {
   try {
-    const { tests } = readTests();
+    const { tests } = await readTests();
     const test = tests.find(t => t.id === req.params.id);
     if (!test) return res.status(404).json({ error: 'Test not found' });
     res.json(test);
@@ -123,12 +220,12 @@ app.get('/api/tests/:id', (req, res) => {
 });
 
 // POST /api/tests — Create new draft test
-app.post('/api/tests', requireAdmin, (req, res) => {
+app.post('/api/tests', requireAdmin, async (req, res) => {
   try {
     const { title, timerMinutes, questions } = req.body;
     if (!title) return res.status(400).json({ error: 'Title is required' });
 
-    const db = readTests();
+    const db = await readTests();
     const newTest = {
       id: newId('test'),
       title: title.trim(),
@@ -145,7 +242,7 @@ app.post('/api/tests', requireAdmin, (req, res) => {
     };
 
     db.tests.push(newTest);
-    writeTests(db);
+    await writeTests(db);
     res.json({ success: true, test: newTest });
   } catch (e) {
     res.status(500).json({ error: 'Failed to create test' });
@@ -153,9 +250,9 @@ app.post('/api/tests', requireAdmin, (req, res) => {
 });
 
 // PUT /api/tests/:id — Edit a draft test
-app.put('/api/tests/:id', requireAdmin, (req, res) => {
+app.put('/api/tests/:id', requireAdmin, async (req, res) => {
   try {
-    const db = readTests();
+    const db = await readTests();
     const idx = db.tests.findIndex(t => t.id === req.params.id);
     if (idx === -1) return res.status(404).json({ error: 'Test not found' });
     if (db.tests[idx].status !== 'draft') {
@@ -175,7 +272,7 @@ app.put('/api/tests/:id', requireAdmin, (req, res) => {
       }));
     }
 
-    writeTests(db);
+    await writeTests(db);
     res.json({ success: true, test: db.tests[idx] });
   } catch (e) {
     res.status(500).json({ error: 'Failed to update test' });
@@ -183,13 +280,12 @@ app.put('/api/tests/:id', requireAdmin, (req, res) => {
 });
 
 // POST /api/tests/:id/publish — Publish test; archive others
-app.post('/api/tests/:id/publish', requireAdmin, (req, res) => {
+app.post('/api/tests/:id/publish', requireAdmin, async (req, res) => {
   try {
-    const db = readTests();
+    const db = await readTests();
     const idx = db.tests.findIndex(t => t.id === req.params.id);
     if (idx === -1) return res.status(404).json({ error: 'Test not found' });
 
-    // Archive any currently published/active test
     db.tests.forEach((t, i) => {
       if (i !== idx && (t.status === 'published' || t.status === 'active')) {
         db.tests[i].status = 'archived';
@@ -197,7 +293,7 @@ app.post('/api/tests/:id/publish', requireAdmin, (req, res) => {
     });
 
     db.tests[idx].status = 'published';
-    writeTests(db);
+    await writeTests(db);
     res.json({ success: true, test: db.tests[idx] });
   } catch (e) {
     res.status(500).json({ error: 'Failed to publish test' });
@@ -205,27 +301,26 @@ app.post('/api/tests/:id/publish', requireAdmin, (req, res) => {
 });
 
 // POST /api/tests/:id/archive — Archive a test
-app.post('/api/tests/:id/archive', requireAdmin, (req, res) => {
+app.post('/api/tests/:id/archive', requireAdmin, async (req, res) => {
   try {
-    const db = readTests();
+    const db = await readTests();
     const idx = db.tests.findIndex(t => t.id === req.params.id);
     if (idx === -1) return res.status(404).json({ error: 'Test not found' });
     db.tests[idx].status = 'archived';
-    writeTests(db);
+    await writeTests(db);
     res.json({ success: true });
   } catch (e) {
     res.status(500).json({ error: 'Failed to archive test' });
   }
 });
 
-// POST /api/tests/upload-csv — Parse + validate CSV, return preview (no save)
-app.post('/api/tests/upload-csv', requireAdmin, (req, res) => {
+// POST /api/tests/upload-csv — Parse + validate CSV
+app.post('/api/tests/upload-csv', requireAdmin, async (req, res) => {
   try {
     const { csvText } = req.body;
     if (!csvText) return res.status(400).json({ error: 'No CSV text provided' });
 
-    // Get existing topics for new-topic detection
-    const { tests } = readTests();
+    const { tests } = await readTests();
     const existingTopics = new Set();
     tests.forEach(t => t.questions.forEach(q => {
       if (q.topic) existingTopics.add(q.topic.toLowerCase().trim());
@@ -234,7 +329,6 @@ app.post('/api/tests/upload-csv', requireAdmin, (req, res) => {
     const lines = csvText.split(/\r?\n/).filter(l => l.trim());
     if (lines.length < 2) return res.status(400).json({ error: 'CSV must have a header row and at least one data row' });
 
-    // Parse headers — case-insensitive, order-insensitive
     const rawHeaders = lines[0].split(',').map(h => h.trim().toLowerCase().replace(/['"]/g, ''));
     const headerMap = {};
     const required = ['question', 'optiona', 'optionb', 'optionc', 'optiond', 'correctanswer'];
@@ -252,7 +346,6 @@ app.post('/api/tests/upload-csv', requireAdmin, (req, res) => {
       const line = lines[i];
       if (!line.trim()) continue;
 
-      // Simple CSV split respecting quoted fields
       const cols = parseCSVLine(line);
       const row = { rowNumber: i + 1, errors: [], warnings: [] };
 
@@ -275,7 +368,6 @@ app.post('/api/tests/upload-csv', requireAdmin, (req, res) => {
 
       const correctIndex = { A: 0, B: 1, C: 2, D: 3 }[correct] ?? 0;
 
-      // New topic detection
       const topicNormalized = topic.toLowerCase().trim();
       if (topic !== 'General' && !existingTopics.has(topicNormalized)) {
         row.warnings.push(`New topic: "${topic}"`);
@@ -320,24 +412,23 @@ function parseCSVLine(line) {
 // SUBMISSIONS ROUTES
 // ══════════════════════════════════════════════════════════════════════════
 
-// POST /api/submissions — Start a submission (participant starts test)
-app.post('/api/submissions', (req, res) => {
+// POST /api/submissions — Start a submission
+app.post('/api/submissions', async (req, res) => {
   try {
-    const db = readTests();
+    const db = await readTests();
     const current = db.tests.find(t => t.status === 'published' || t.status === 'active');
     if (!current) return res.status(404).json({ error: 'No active test found' });
 
-    // Mark test as active
     current.status = 'active';
-    writeTests(db);
+    await writeTests(db);
 
-    const subsDb = readSubs();
-    // Remove any incomplete submission for this test (re-start case)
+    const subsDb = await readSubs();
     subsDb.submissions = subsDb.submissions.filter(
       s => !(s.testId === current.id && !s.submittedAt)
     );
 
     const submission = {
+      id: newId('sub'),
       testId: current.id,
       startedAt: new Date().toISOString(),
       submittedAt: null,
@@ -347,7 +438,7 @@ app.post('/api/submissions', (req, res) => {
       totalQuestions: current.questions.length
     };
     subsDb.submissions.push(submission);
-    writeSubs(subsDb);
+    await writeSubs(subsDb);
 
     res.json({ success: true, testId: current.id, submission });
   } catch (e) {
@@ -357,12 +448,12 @@ app.post('/api/submissions', (req, res) => {
 });
 
 // POST /api/submissions/:testId/answer — Record one answer
-app.post('/api/submissions/:testId/answer', (req, res) => {
+app.post('/api/submissions/:testId/answer', async (req, res) => {
   try {
     const { testId } = req.params;
     const { questionId, selectedIndex } = req.body;
 
-    const db = readTests();
+    const db = await readTests();
     const test = db.tests.find(t => t.id === testId);
     if (!test) return res.status(404).json({ error: 'Test not found' });
 
@@ -371,11 +462,10 @@ app.post('/api/submissions/:testId/answer', (req, res) => {
 
     const correct = question.correctIndex === selectedIndex;
 
-    const subsDb = readSubs();
+    const subsDb = await readSubs();
     const sub = subsDb.submissions.find(s => s.testId === testId && !s.submittedAt);
     if (!sub) return res.status(404).json({ error: 'No active submission found' });
 
-    // Remove existing answer for this question (allow re-answer before submit)
     sub.answers = sub.answers.filter(a => a.questionId !== questionId);
     sub.answers.push({
       questionId,
@@ -383,9 +473,9 @@ app.post('/api/submissions/:testId/answer', (req, res) => {
       correct,
       answeredAt: new Date().toISOString()
     });
-    writeSubs(subsDb);
+    await writeSubs(subsDb);
 
-    res.json({ success: true, correct });
+    res.json({ success: true });
   } catch (e) {
     console.error(e);
     res.status(500).json({ error: 'Failed to record answer' });
@@ -393,15 +483,15 @@ app.post('/api/submissions/:testId/answer', (req, res) => {
 });
 
 // POST /api/submissions/:testId/submit — Finalize submission
-app.post('/api/submissions/:testId/submit', (req, res) => {
+app.post('/api/submissions/:testId/submit', async (req, res) => {
   try {
     const { testId } = req.params;
 
-    const db = readTests();
+    const db = await readTests();
     const test = db.tests.find(t => t.id === testId);
     if (!test) return res.status(404).json({ error: 'Test not found' });
 
-    const subsDb = readSubs();
+    const subsDb = await readSubs();
     const sub = subsDb.submissions.find(s => s.testId === testId && !s.submittedAt);
     if (!sub) return res.status(404).json({ error: 'No active submission found' });
 
@@ -412,33 +502,17 @@ app.post('/api/submissions/:testId/submit', (req, res) => {
     sub.score = sub.answers.filter(a => a.correct).length;
     sub.totalQuestions = test.questions.length;
 
-    // Enrich answers with question data for results screen
-    const enrichedAnswers = test.questions.map(q => {
-      const ans = sub.answers.find(a => a.questionId === q.id);
-      return {
-        questionId: q.id,
-        questionText: q.text,
-        options: q.options,
-        correctIndex: q.correctIndex,
-        topic: q.topic,
-        selectedIndex: ans ? ans.selectedIndex : null,
-        correct: ans ? ans.correct : false,
-        answeredAt: ans ? ans.answeredAt : null
-      };
-    });
+    await writeSubs(subsDb);
 
-    writeSubs(subsDb);
-
-    // Mark test as completed
     test.status = 'completed';
-    writeTests(db);
+    await writeTests(db);
 
     res.json({
       success: true,
-      score: sub.score,
       totalQuestions: sub.totalQuestions,
+      answeredCount: sub.answers.length,
       timeTakenSeconds: sub.timeTakenSeconds,
-      answers: enrichedAnswers
+      message: 'Test submitted successfully. Marks are visible only to the admin/teacher.'
     });
   } catch (e) {
     console.error(e);
@@ -451,35 +525,35 @@ app.post('/api/submissions/:testId/submit', (req, res) => {
 // ══════════════════════════════════════════════════════════════════════════
 
 // GET /api/analytics/history — Aggregated analytics data
-app.get('/api/analytics/history', (req, res) => {
+app.get('/api/analytics/history', async (req, res) => {
   try {
-    const { tests } = readTests();
-    const { submissions } = readSubs();
+    const { tests } = await readTests();
+    const { submissions } = await readSubs();
 
-    // Include any test that has a completed submission, or has status completed/archived
-    const completedTests = tests.filter(t => {
-      const hasSub = submissions.some(s => s.testId === t.id && s.submittedAt);
-      return hasSub || t.status === 'completed' || t.status === 'archived';
-    });
+    // Get all completed submissions
+    const completedSubs = submissions.filter(s => s.submittedAt);
 
-    // Score trend
-    const scoreTrend = completedTests.map(t => {
-      const sub = submissions.find(s => s.testId === t.id && s.submittedAt);
+    // Score trend (every attempt in chronological order)
+    const scoreTrend = completedSubs.map((sub, i) => {
+      const t = tests.find(test => test.id === sub.testId);
+      const totalQ = sub.totalQuestions || (t ? t.questions.length : 0);
+      const score = sub.score !== null ? sub.score : 0;
       return {
-        testId: t.id,
-        title: t.title,
-        date: sub ? sub.submittedAt : t.createdAt,
-        score: sub ? sub.score : 0,
-        totalQuestions: t.questions.length,
-        scorePct: sub ? Math.round((sub.score / t.questions.length) * 100) : 0
+        submissionId: sub.id || `${sub.testId}_${i}`,
+        testId: sub.testId,
+        title: t ? t.title : 'Quiz',
+        date: sub.submittedAt,
+        score: score,
+        totalQuestions: totalQ,
+        scorePct: totalQ > 0 ? Math.round((score / totalQ) * 100) : 0
       };
     }).sort((a, b) => new Date(a.date) - new Date(b.date));
 
-    // Topic accuracy
+    // Topic accuracy across all completed attempts
     const topicStats = {};
-    completedTests.forEach(t => {
-      const sub = submissions.find(s => s.testId === t.id && s.submittedAt);
-      if (!sub) return;
+    completedSubs.forEach(sub => {
+      const t = tests.find(test => test.id === sub.testId);
+      if (!t) return;
       t.questions.forEach(q => {
         const topic = q.topic || 'General';
         if (!topicStats[topic]) topicStats[topic] = { correct: 0, total: 0 };
@@ -493,14 +567,14 @@ app.get('/api/analytics/history', (req, res) => {
       topic,
       correct: s.correct,
       total: s.total,
-      accuracy: Math.round((s.correct / s.total) * 100)
-    })).sort((a, b) => a.accuracy - b.accuracy); // worst first
+      accuracy: s.total > 0 ? Math.round((s.correct / s.total) * 100) : 0
+    })).sort((a, b) => a.accuracy - b.accuracy);
 
-    // Time analysis
+    // Time analysis across all attempts
     const timeStats = { totalAnswers: 0, totalTime: 0, perQuestion: {} };
-    completedTests.forEach(t => {
-      const sub = submissions.find(s => s.testId === t.id && s.submittedAt);
-      if (!sub) return;
+    completedSubs.forEach(sub => {
+      const t = tests.find(test => test.id === sub.testId);
+      if (!t) return;
       sub.answers.forEach((ans, i) => {
         const prevAns = sub.answers[i - 1];
         const startRef = prevAns ? new Date(prevAns.answeredAt) : new Date(sub.startedAt);
@@ -519,26 +593,30 @@ app.get('/api/analytics/history', (req, res) => {
     timeStats.avgSecondsPerQuestion = timeStats.totalAnswers > 0
       ? Math.round(timeStats.totalTime / timeStats.totalAnswers) : 0;
 
-    // Test history table
-    const history = completedTests.map(t => {
-      const sub = submissions.find(s => s.testId === t.id && s.submittedAt);
+    // Test history table (every attempt listed, newest first)
+    const history = completedSubs.map((sub, i) => {
+      const t = tests.find(test => test.id === sub.testId);
+      const totalQ = sub.totalQuestions || (t ? t.questions.length : 0);
+      const score = sub.score !== null ? sub.score : 0;
+      // Use submission's own unique id; if it doesn't have one (old data), derive a stable key from startedAt timestamp
+      const rowId = sub.id || `${sub.testId}__${(sub.startedAt || '').replace(/[^0-9]/g, '')}`;
       return {
-        id: t.id,
-        title: t.title,
-        date: sub ? sub.submittedAt : t.createdAt,
-        score: sub ? sub.score : null,
-        totalQuestions: t.questions.length,
-        scorePct: sub ? Math.round((sub.score / t.questions.length) * 100) : null,
-        timeTakenSeconds: sub ? sub.timeTakenSeconds : null
+        id: rowId,
+        testId: sub.testId,
+        title: t ? t.title : 'Quiz',
+        date: sub.submittedAt,
+        score: score,
+        totalQuestions: totalQ,
+        scorePct: totalQ > 0 ? Math.round((score / totalQ) * 100) : 0,
+        timeTakenSeconds: sub.timeTakenSeconds
       };
     }).sort((a, b) => new Date(b.date) - new Date(a.date));
 
-    // Current active test
-    const { tests: allTests } = readTests();
-    const activeTest = allTests.find(t => t.status === 'active' || t.status === 'published');
+    // Active test status
+    const activeTest = tests.find(t => t.status === 'active' || t.status === 'published');
     let currentStatus = null;
     if (activeTest) {
-      const activeSub = readSubs().submissions.find(s => s.testId === activeTest.id && !s.submittedAt);
+      const activeSub = submissions.find(s => s.testId === activeTest.id && !s.submittedAt);
       currentStatus = {
         test: activeTest,
         submission: activeSub || null
@@ -552,14 +630,37 @@ app.get('/api/analytics/history', (req, res) => {
   }
 });
 
-// GET /api/analytics/test/:id — Detailed breakdown for one test
-app.get('/api/analytics/test/:id', (req, res) => {
+// GET /api/analytics/test/:id — Detailed breakdown for one submission or test
+app.get('/api/analytics/test/:id', async (req, res) => {
   try {
-    const { tests } = readTests();
-    const { submissions } = readSubs();
-    const test = tests.find(t => t.id === req.params.id);
+    const { tests } = await readTests();
+    const { submissions } = await readSubs();
+
+    const paramId = req.params.id;
+    let sub = null;
+
+    // 1. Try exact match on submission's own unique id
+    sub = submissions.find(s => s.id === paramId && s.submittedAt);
+
+    // 2. If not found by submission id, try the legacy startedAt-derived key
+    if (!sub) {
+      sub = submissions.find(s => {
+        const derivedKey = `${s.testId}__${(s.startedAt || '').replace(/[^0-9]/g, '')}`;
+        return derivedKey === paramId && s.submittedAt;
+      });
+    }
+
+    // 3. Last resort: if paramId looks like a testId, get the MOST RECENT completed submission for that test
+    if (!sub) {
+      const candidates = submissions
+        .filter(s => s.testId === paramId && s.submittedAt)
+        .sort((a, b) => new Date(b.submittedAt) - new Date(a.submittedAt));
+      sub = candidates[0] || null;
+    }
+
+    const test = tests.find(t => t.id === (sub ? sub.testId : paramId));
     if (!test) return res.status(404).json({ error: 'Test not found' });
-    const sub = submissions.find(s => s.testId === test.id && s.submittedAt);
+
     const detail = test.questions.map(q => {
       const ans = sub ? sub.answers.find(a => a.questionId === q.id) : null;
       return {
@@ -580,9 +681,9 @@ app.get('/api/analytics/test/:id', (req, res) => {
 });
 
 // GET /api/topics — Distinct list of all topics used
-app.get('/api/topics', (req, res) => {
+app.get('/api/topics', async (req, res) => {
   try {
-    const { tests } = readTests();
+    const { tests } = await readTests();
     const topicSet = new Set();
     tests.forEach(t => t.questions.forEach(q => {
       if (q.topic) topicSet.add(q.topic);
@@ -594,16 +695,15 @@ app.get('/api/topics', (req, res) => {
 });
 
 // ══════════════════════════════════════════════════════════════════════════
-// LEGACY SHIMS (backward compat)
+// LEGACY SHIMS
 // ══════════════════════════════════════════════════════════════════════════
 
-// Old GET /api/questions — returns questions of current test
-app.get('/api/questions', (req, res) => {
+app.get('/api/questions', async (req, res) => {
   try {
-    const { tests } = readTests();
+    const { tests } = await readTests();
     const current = tests.find(t => t.status === 'published' || t.status === 'active');
     if (!current) return res.json([]);
-    const { submissions } = readSubs();
+    const { submissions } = await readSubs();
     const sub = submissions.find(s => s.testId === current.id && !s.submittedAt);
     res.json(current.questions.map(q => ({
       id: q.id,
@@ -617,12 +717,10 @@ app.get('/api/questions', (req, res) => {
   }
 });
 
-// Old POST /api/questions (admin publish) — kept for old admin.js
-app.post('/api/questions', (req, res) => {
+app.post('/api/questions', async (req, res) => {
   const { questions, password } = req.body;
   if (password !== ADMIN_PASSWORD) return res.status(401).json({ error: 'Unauthorized' });
-  const db = readTests();
-  // Archive current
+  const db = await readTests();
   db.tests.forEach(t => { if (t.status === 'published' || t.status === 'active') t.status = 'archived'; });
   const newTest = {
     id: newId('test'),
@@ -639,20 +737,19 @@ app.post('/api/questions', (req, res) => {
     }))
   };
   db.tests.push(newTest);
-  writeTests(db);
+  await writeTests(db);
   res.json({ success: true });
 });
 
-// Old POST /api/answer — delegates to new system
-app.post('/api/answer', (req, res) => {
+app.post('/api/answer', async (req, res) => {
   const { questionId, answerIndex } = req.body;
-  const { tests } = readTests();
+  const { tests } = await readTests();
   const current = tests.find(t => t.status === 'active');
   if (!current) return res.status(404).json({ error: 'No active test' });
   const question = current.questions.find(q => String(q.id) === String(questionId));
   if (!question) return res.status(404).json({ error: 'Question not found' });
   const correct = question.correctIndex === answerIndex;
-  const subsDb = readSubs();
+  const subsDb = await readSubs();
   let sub = subsDb.submissions.find(s => s.testId === current.id && !s.submittedAt);
   if (!sub) {
     sub = { testId: current.id, startedAt: new Date().toISOString(), submittedAt: null, timeTakenSeconds: null, answers: [], score: null, totalQuestions: current.questions.length };
@@ -660,7 +757,7 @@ app.post('/api/answer', (req, res) => {
   }
   sub.answers = sub.answers.filter(a => a.questionId !== String(questionId));
   sub.answers.push({ questionId: String(questionId), selectedIndex: answerIndex, correct, answeredAt: new Date().toISOString() });
-  writeSubs(subsDb);
+  await writeSubs(subsDb);
   res.json({ success: true, answer: answerIndex });
 });
 
