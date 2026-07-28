@@ -25,6 +25,19 @@ function checkAutoAuth() {
   }
 }
 
+function handleAuthError() {
+  sessionStorage.removeItem('admin_password');
+  adminPassword = '';
+  document.getElementById('password-modal').style.display = 'flex';
+  document.getElementById('admin-app').classList.add('hidden');
+  document.getElementById('admin-app').classList.remove('flex');
+  const errEl = document.getElementById('login-error');
+  if (errEl) {
+    errEl.textContent = 'Incorrect password. Default password is: admin123';
+    errEl.classList.remove('hidden');
+  }
+}
+
 document.getElementById('login-btn').addEventListener('click', tryLogin);
 document.getElementById('admin-pwd').addEventListener('keypress', e => { if (e.key === 'Enter') tryLogin(); });
 
@@ -34,6 +47,8 @@ function tryLogin() {
   adminPassword = pwd;
   sessionStorage.setItem('admin_password', pwd);
   sessionStorage.setItem('admin_authenticated', 'true');
+  const errEl = document.getElementById('login-error');
+  if (errEl) errEl.classList.add('hidden');
   document.getElementById('password-modal').style.display = 'none';
   document.getElementById('admin-app').classList.remove('hidden');
   document.getElementById('admin-app').classList.add('flex');
@@ -339,6 +354,7 @@ async function saveDraft() {
       headers: { 'Content-Type': 'application/json', 'x-admin-password': adminPassword },
       body: JSON.stringify({ password: adminPassword, title, timerMinutes, questions })
     });
+    if (res.status === 401) { handleAuthError(); return; }
     if (!res.ok) { alert('Failed to save — check password.'); return; }
     const data = await res.json();
     showToast('Draft saved!');
@@ -357,6 +373,7 @@ async function saveAndPublish() {
       headers: { 'Content-Type': 'application/json', 'x-admin-password': adminPassword },
       body: JSON.stringify({ password: adminPassword, title, timerMinutes, questions })
     });
+    if (res.status === 401) { handleAuthError(); return; }
     if (!res.ok) { alert('Failed to save.'); return; }
     const data = await res.json();
     // Then publish
@@ -479,6 +496,7 @@ async function parseCSV() {
       headers: { 'Content-Type': 'application/json', 'x-admin-password': adminPassword },
       body: JSON.stringify({ password: adminPassword, csvText })
     });
+    if (res.status === 401) { handleAuthError(); return; }
     const data = await res.json();
     if (!res.ok) { alert(data.error || 'CSV parse failed.'); return; }
 
