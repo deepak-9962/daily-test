@@ -113,7 +113,7 @@ async function seedCloudDb(client) {
       const fileSubs = readSubsFromFile();
       if (fileSubs.submissions && fileSubs.submissions.length > 0) {
         const formatted = fileSubs.submissions.map(s => ({
-          id: s.id,
+          id: s.id || `sub_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
           test_id: s.testId,
           started_at: s.startedAt,
           submitted_at: s.submittedAt,
@@ -209,7 +209,7 @@ async function writeSubs(data) {
   if (client && data.submissions) {
     try {
       const formatted = data.submissions.map(s => ({
-        id: s.id,
+        id: s.id || `sub_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
         test_id: s.testId,
         started_at: s.startedAt,
         submitted_at: s.submittedAt,
