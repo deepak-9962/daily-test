@@ -247,6 +247,9 @@ function newId(prefix) {
 
 // GET /api/tests/current — Returns published/active test or null
 app.get('/api/tests/current', async (req, res) => {
+  res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+  res.setHeader('Pragma', 'no-cache');
+  res.setHeader('Expires', '0');
   try {
     const { tests } = await readTests();
     const current = tests.find(t => t.status === 'published' || t.status === 'active');
@@ -570,9 +573,6 @@ app.post('/api/submissions/:testId/submit', async (req, res) => {
     sub.totalQuestions = test.questions.length;
 
     await writeSubs(subsDb);
-
-    test.status = 'completed';
-    await writeTests(db);
 
     res.json({
       success: true,
