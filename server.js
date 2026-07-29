@@ -90,46 +90,8 @@ function getSupabaseClient() {
 }
 
 async function seedCloudDb(client) {
-  if (isSeeded) return;
-  try {
-    const { count: testsCount, error: err1 } = await client.from('tests').select('*', { count: 'exact', head: true });
-    if (!err1 && testsCount === 0) {
-      const fileData = readTestsFromFile();
-      if (fileData.tests && fileData.tests.length > 0) {
-        const formatted = fileData.tests.map(t => ({
-          id: t.id,
-          title: t.title,
-          created_at: t.createdAt || new Date().toISOString(),
-          timer_minutes: t.timerMinutes || 15,
-          status: t.status || 'draft',
-          questions: t.questions || []
-        }));
-        await client.from('tests').insert(formatted);
-        console.log(`🌱 Seeded ${formatted.length} tests to Supabase Cloud`);
-      }
-    }
-    const { count: subsCount, error: err2 } = await client.from('submissions').select('*', { count: 'exact', head: true });
-    if (!err2 && subsCount === 0) {
-      const fileSubs = readSubsFromFile();
-      if (fileSubs.submissions && fileSubs.submissions.length > 0) {
-        const formatted = fileSubs.submissions.map(s => ({
-          id: s.id || `sub_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
-          test_id: s.testId,
-          started_at: s.startedAt,
-          submitted_at: s.submittedAt,
-          time_taken_seconds: s.timeTakenSeconds,
-          score: s.score,
-          total_questions: s.totalQuestions,
-          answers: s.answers || []
-        }));
-        await client.from('submissions').insert(formatted);
-        console.log(`🌱 Seeded ${formatted.length} submissions to Supabase Cloud`);
-      }
-    }
-    isSeeded = true;
-  } catch (e) {
-    console.error('Failed to seed Supabase database:', e.message);
-  }
+  // Seeding from local files disabled; all data managed in Cloud (Supabase)
+  isSeeded = true;
 }
 
 async function readTests() {
