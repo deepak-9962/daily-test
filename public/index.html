@@ -52,9 +52,15 @@
       <span class="material-symbols-outlined text-primary">assignment</span>
       <h1 id="header-title" class="text-headline-md font-headline-md font-black text-primary">TestFlow</h1>
     </div>
-    <div id="timer-wrapper" class="hidden items-center gap-sm border border-outline-variant rounded-md px-sm py-xs bg-surface-container-lowest">
-      <span class="material-symbols-outlined text-primary text-[18px]">schedule</span>
-      <span id="timer" class="text-timer-mono font-timer-mono text-primary">--:--</span>
+    <div class="flex items-center gap-sm">
+      <div id="timer-wrapper" class="hidden items-center gap-sm border border-outline-variant rounded-md px-sm py-xs bg-surface-container-lowest">
+        <span class="material-symbols-outlined text-primary text-[18px]">schedule</span>
+        <span id="timer" class="text-timer-mono font-timer-mono text-primary">--:--</span>
+      </div>
+      <a href="admin.html" class="flex items-center gap-xs px-sm py-1.5 rounded-lg border border-primary text-primary text-label-md font-medium hover:bg-primary hover:text-white transition-colors">
+        <span class="material-symbols-outlined text-[18px]">tune</span>
+        <span>Admin Panel</span>
+      </a>
     </div>
   </div>
   <!-- Progress Bar -->
@@ -108,6 +114,9 @@
       <span>Start Test</span>
       <span class="material-symbols-outlined group-hover:translate-x-1 transition-transform">arrow_forward</span>
     </button>
+    <a href="admin.html" class="text-label-md text-primary hover:underline font-label-md flex items-center gap-xs pt-xs">
+      <span class="material-symbols-outlined text-[16px]">tune</span> Teacher / Admin Panel
+    </a>
   </div>
 
   <!-- Questions Container (during test) -->
