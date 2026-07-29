@@ -563,9 +563,8 @@ app.get('/api/analytics/history', async (req, res) => {
     const { tests } = await readTests();
     const { submissions } = await readSubs();
 
-    // Calculate attempt numbers for each test submission chronologically
-    const completedSubsAsc = [...submissions.filter(s => s.submittedAt)]
-      .sort((a, b) => new Date(a.submittedAt) - new Date(b.submittedAt));
+    const completedSubs = (submissions || []).filter(s => s && s.submittedAt);
+    const completedSubsAsc = [...completedSubs].sort((a, b) => new Date(a.submittedAt) - new Date(b.submittedAt));
 
     const testAttemptCounts = {};
     const subAttemptMap = {};
