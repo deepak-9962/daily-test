@@ -536,6 +536,10 @@ app.post('/api/submissions/:testId/submit', async (req, res) => {
 
     await writeSubs(subsDb);
 
+    // Mark test as completed so it is no longer available to attempt until re-published by admin
+    test.status = 'completed';
+    await writeTests(db);
+
     res.json({
       success: true,
       totalQuestions: sub.totalQuestions,
