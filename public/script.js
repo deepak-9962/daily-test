@@ -6,6 +6,7 @@ const LETTERS = ['A', 'B', 'C', 'D'];
 
 let currentTest = null;
 let activeTestId = null;
+let activeSubmissionId = null;  // tracks the specific submission row in Supabase
 let totalQuestions = 0;
 let answeredCount = 0;
 let timerInterval = null;
@@ -67,10 +68,12 @@ async function startTest() {
     const data = await res.json();
     if (!res.ok) throw new Error(data.error || 'Failed to start');
     activeTestId = data.testId;
+    activeSubmissionId = data.submission?.id || null;  // save the unique submission ID
   } catch (e) {
     console.error('Failed to start submission:', e);
-    // Continue anyway — we'll still let them answer via legacy route
+    // Continue anyway
     activeTestId = currentTest.id;
+    activeSubmissionId = null;
   }
 
   hide(landingScreen);
@@ -163,7 +166,7 @@ async function handleOptionClick(e) {
     const res = await fetch(`/api/submissions/${activeTestId}/answer`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ questionId: qId, selectedIndex: optIndex })
+      body: JSON.stringify({ questionId: qId, selectedIndex: optIndex, submissionId: activeSubmissionId })
     });
     if (!res.ok) throw new Error('Answer save failed');
   } catch (err) {
@@ -236,7 +239,8 @@ async function submitTest(isAutoSubmit = false) {
   try {
     const res = await fetch(`/api/submissions/${activeTestId}/submit`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' }
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ submissionId: activeSubmissionId })
     });
     const data = await res.json();
 

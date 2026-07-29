@@ -454,11 +454,6 @@ app.post('/api/submissions', async (req, res) => {
     current.status = 'active';
     await writeTests(db);
 
-    const subsDb = await readSubs();
-    subsDb.submissions = subsDb.submissions.filter(
-      s => !(s.testId === current.id && !s.submittedAt)
-    );
-
     const submission = {
       id: newId('sub'),
       testId: current.id,
@@ -469,8 +464,28 @@ app.post('/api/submissions', async (req, res) => {
       score: null,
       totalQuestions: current.questions.length
     };
-    subsDb.submissions.push(submission);
-    await writeSubs(subsDb);
+
+    // Write directly to Supabase as a new row (no read-modify-write)
+    const client = getSupabaseClient();
+    if (client) {
+      const { error } = await client.from('submissions').insert({
+        id: submission.id,
+        test_id: submission.testId,
+        started_at: submission.startedAt,
+        submitted_at: null,
+        time_taken_seconds: null,
+        score: null,
+        total_questions: submission.totalQuestions,
+        answers: []
+      });
+      if (error) console.error('Supabase insert submission error:', error.message);
+    } else {
+      // Fallback to file
+      const subsDb = await readSubs();
+      subsDb.submissions = subsDb.submissions.filter(s => !(s.testId === current.id && !s.submittedAt));
+      subsDb.submissions.push(submission);
+      writeSubsToFile(subsDb);
+    }
 
     res.json({ success: true, testId: current.id, submission });
   } catch (e) {
@@ -483,7 +498,7 @@ app.post('/api/submissions', async (req, res) => {
 app.post('/api/submissions/:testId/answer', async (req, res) => {
   try {
     const { testId } = req.params;
-    const { questionId, selectedIndex } = req.body;
+    const { questionId, selectedIndex, submissionId } = req.body;
 
     const db = await readTests();
     const test = db.tests.find(t => t.id === testId);
@@ -493,19 +508,33 @@ app.post('/api/submissions/:testId/answer', async (req, res) => {
     if (!question) return res.status(404).json({ error: 'Question not found' });
 
     const correct = question.correctIndex === selectedIndex;
+    const newAnswer = { questionId, selectedIndex, correct, answeredAt: new Date().toISOString() };
 
-    const subsDb = await readSubs();
-    const sub = subsDb.submissions.find(s => s.testId === testId && !s.submittedAt);
-    if (!sub) return res.status(404).json({ error: 'No active submission found' });
+    const client = getSupabaseClient();
+    if (client) {
+      // Find the active (unsubmitted) submission for this test directly in Supabase
+      const query = submissionId
+        ? client.from('submissions').select('*').eq('id', submissionId).is('submitted_at', null)
+        : client.from('submissions').select('*').eq('test_id', testId).is('submitted_at', null).order('started_at', { ascending: false }).limit(1);
 
-    sub.answers = sub.answers.filter(a => a.questionId !== questionId);
-    sub.answers.push({
-      questionId,
-      selectedIndex,
-      correct,
-      answeredAt: new Date().toISOString()
-    });
-    await writeSubs(subsDb);
+      const { data: rows, error: fetchErr } = await query;
+      if (fetchErr || !rows || rows.length === 0) return res.status(404).json({ error: 'No active submission found' });
+
+      const row = rows[0];
+      const updatedAnswers = (row.answers || []).filter(a => a.questionId !== questionId);
+      updatedAnswers.push(newAnswer);
+
+      const { error: updateErr } = await client.from('submissions').update({ answers: updatedAnswers }).eq('id', row.id);
+      if (updateErr) console.error('Supabase answer update error:', updateErr.message);
+    } else {
+      // Fallback to file
+      const subsDb = readSubsFromFile();
+      const sub = subsDb.submissions.find(s => s.testId === testId && !s.submittedAt);
+      if (!sub) return res.status(404).json({ error: 'No active submission found' });
+      sub.answers = (sub.answers || []).filter(a => a.questionId !== questionId);
+      sub.answers.push(newAnswer);
+      writeSubsToFile(subsDb);
+    }
 
     res.json({ success: true });
   } catch (e) {
@@ -518,23 +547,56 @@ app.post('/api/submissions/:testId/answer', async (req, res) => {
 app.post('/api/submissions/:testId/submit', async (req, res) => {
   try {
     const { testId } = req.params;
+    const { submissionId } = req.body;
 
     const db = await readTests();
     const test = db.tests.find(t => t.id === testId);
     if (!test) return res.status(404).json({ error: 'Test not found' });
 
-    const subsDb = await readSubs();
-    const sub = subsDb.submissions.find(s => s.testId === testId && !s.submittedAt);
-    if (!sub) return res.status(404).json({ error: 'No active submission found' });
+    const client = getSupabaseClient();
+    let sub = null;
 
-    const now = new Date();
-    const startedAt = new Date(sub.startedAt);
-    sub.submittedAt = now.toISOString();
-    sub.timeTakenSeconds = Math.round((now - startedAt) / 1000);
-    sub.score = sub.answers.filter(a => a.correct).length;
-    sub.totalQuestions = test.questions.length;
+    if (client) {
+      // Find the specific in-progress submission directly from Supabase
+      const query = submissionId
+        ? client.from('submissions').select('*').eq('id', submissionId).is('submitted_at', null)
+        : client.from('submissions').select('*').eq('test_id', testId).is('submitted_at', null).order('started_at', { ascending: false }).limit(1);
 
-    await writeSubs(subsDb);
+      const { data: rows, error: fetchErr } = await query;
+      if (fetchErr || !rows || rows.length === 0) return res.status(404).json({ error: 'No active submission found' });
+
+      const row = rows[0];
+      const now = new Date();
+      const timeTakenSeconds = Math.round((now - new Date(row.started_at)) / 1000);
+      const score = (row.answers || []).filter(a => a.correct).length;
+      const totalQuestions = test.questions.length;
+
+      const { error: updateErr } = await client.from('submissions').update({
+        submitted_at: now.toISOString(),
+        time_taken_seconds: timeTakenSeconds,
+        score,
+        total_questions: totalQuestions
+      }).eq('id', row.id);
+
+      if (updateErr) {
+        console.error('Supabase submit error:', updateErr.message);
+        return res.status(500).json({ error: 'Failed to submit' });
+      }
+
+      sub = { answers: row.answers || [], timeTakenSeconds, totalQuestions };
+    } else {
+      // Fallback to file
+      const subsDb = readSubsFromFile();
+      const fileSub = subsDb.submissions.find(s => s.testId === testId && !s.submittedAt);
+      if (!fileSub) return res.status(404).json({ error: 'No active submission found' });
+      const now = new Date();
+      fileSub.submittedAt = now.toISOString();
+      fileSub.timeTakenSeconds = Math.round((now - new Date(fileSub.startedAt)) / 1000);
+      fileSub.score = (fileSub.answers || []).filter(a => a.correct).length;
+      fileSub.totalQuestions = test.questions.length;
+      writeSubsToFile(subsDb);
+      sub = fileSub;
+    }
 
     // Mark test as completed so it is no longer available to attempt until re-published by admin
     test.status = 'completed';
