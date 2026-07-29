@@ -203,6 +203,23 @@ function newId(prefix) {
   return `${prefix}_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`;
 }
 
+// GET /api/debug/supabase-status — Check if Supabase is connected on Vercel
+app.get('/api/debug/supabase-status', async (req, res) => {
+  const client = getSupabaseClient();
+  const hasUrl = !!process.env.SUPABASE_URL;
+  const hasKey = !!(process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_ANON_KEY);
+  if (!client) {
+    return res.json({ connected: false, hasUrl, hasKey, reason: 'Client could not be initialized' });
+  }
+  try {
+    const { count, error } = await client.from('submissions').select('*', { count: 'exact', head: true });
+    if (error) return res.json({ connected: false, hasUrl, hasKey, error: error.message });
+    return res.json({ connected: true, hasUrl, hasKey, submissionsCount: count });
+  } catch (e) {
+    return res.json({ connected: false, hasUrl, hasKey, error: e.message });
+  }
+});
+
 // ══════════════════════════════════════════════════════════════════════════
 // TESTS ROUTES
 // ══════════════════════════════════════════════════════════════════════════
