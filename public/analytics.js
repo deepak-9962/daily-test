@@ -308,14 +308,17 @@ function renderHistoryTable(history) {
   tbody.innerHTML = '';
 
   history.forEach(h => {
-    const date = h.date ? new Date(h.date).toLocaleDateString('en-IN', { day:'numeric', month:'short', year:'numeric' }) : '—';
+    const date = h.date ? new Date(h.date).toLocaleDateString('en-IN', { day:'numeric', month:'short', year:'numeric', hour:'2-digit', minute:'2-digit' }) : '—';
     const timeStr = h.timeTakenSeconds ? fmtTime(h.timeTakenSeconds) : '—';
     const pctColor = h.scorePct !== null ? (h.scorePct >= 75 ? 'text-green-700' : h.scorePct >= 50 ? 'text-primary' : 'text-error') : 'text-on-surface-variant';
 
     const tr = document.createElement('tr');
     tr.className = 'border-b border-outline-variant hover:bg-surface-container-low transition-colors';
     tr.innerHTML = `
-      <td class="py-sm pr-md text-on-surface font-medium">${escHtml(h.title)}</td>
+      <td class="py-sm pr-md text-on-surface font-medium flex items-center gap-xs">
+        <span>${escHtml(h.title)}</span>
+        <span class="px-1.5 py-0.5 rounded text-[11px] font-label-md bg-surface-container-high text-primary flex-shrink-0">Attempt ${h.attemptNumber || 1}</span>
+      </td>
       <td class="py-sm pr-md text-on-surface-variant text-[13px]">${date}</td>
       <td class="py-sm pr-md font-timer-mono text-[14px] text-on-surface">${h.score !== null ? `${h.score}/${h.totalQuestions}` : '—'}</td>
       <td class="py-sm pr-md font-timer-mono text-[14px] ${pctColor}">${h.scorePct !== null ? `${h.scorePct}%` : '—'}</td>

@@ -563,24 +563,36 @@ app.get('/api/analytics/history', async (req, res) => {
     const { tests } = await readTests();
     const { submissions } = await readSubs();
 
-    // Get all completed submissions
-    const completedSubs = submissions.filter(s => s.submittedAt);
+    // Calculate attempt numbers for each test submission chronologically
+    const completedSubsAsc = [...submissions.filter(s => s.submittedAt)]
+      .sort((a, b) => new Date(a.submittedAt) - new Date(b.submittedAt));
+
+    const testAttemptCounts = {};
+    const subAttemptMap = {};
+
+    completedSubsAsc.forEach(sub => {
+      const key = sub.id || sub.startedAt;
+      testAttemptCounts[sub.testId] = (testAttemptCounts[sub.testId] || 0) + 1;
+      subAttemptMap[key] = testAttemptCounts[sub.testId];
+    });
 
     // Score trend (every attempt in chronological order)
-    const scoreTrend = completedSubs.map((sub, i) => {
+    const scoreTrend = completedSubsAsc.map((sub, i) => {
       const t = tests.find(test => test.id === sub.testId);
       const totalQ = sub.totalQuestions || (t ? t.questions.length : 0);
       const score = sub.score !== null ? sub.score : 0;
+      const attemptNum = subAttemptMap[sub.id || sub.startedAt] || 1;
       return {
         submissionId: sub.id || `${sub.testId}_${i}`,
         testId: sub.testId,
         title: t ? t.title : 'Quiz',
+        attemptNumber: attemptNum,
         date: sub.submittedAt,
         score: score,
         totalQuestions: totalQ,
         scorePct: totalQ > 0 ? Math.round((score / totalQ) * 100) : 0
       };
-    }).sort((a, b) => new Date(a.date) - new Date(b.date));
+    });
 
     // Topic accuracy across all completed attempts
     const topicStats = {};
@@ -631,12 +643,13 @@ app.get('/api/analytics/history', async (req, res) => {
       const t = tests.find(test => test.id === sub.testId);
       const totalQ = sub.totalQuestions || (t ? t.questions.length : 0);
       const score = sub.score !== null ? sub.score : 0;
-      // Use submission's own unique id; if it doesn't have one (old data), derive a stable key from startedAt timestamp
       const rowId = sub.id || `${sub.testId}__${(sub.startedAt || '').replace(/[^0-9]/g, '')}`;
+      const attemptNum = subAttemptMap[sub.id || sub.startedAt] || 1;
       return {
         id: rowId,
         testId: sub.testId,
         title: t ? t.title : 'Quiz',
+        attemptNumber: attemptNum,
         date: sub.submittedAt,
         score: score,
         totalQuestions: totalQ,
