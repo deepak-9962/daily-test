@@ -2,7 +2,8 @@ require('dotenv').config();
 const express = require('express');
 const fs = require('fs');
 const path = require('path');
-const { MongoClient } = require('mongodb');
+const { createClient } = require('@supabase/supabase-js');
+const ws = require('ws');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -63,113 +64,164 @@ function writeSubsToFile(data) {
   try { fs.writeFileSync(SUBS_FILE, JSON.stringify(data, null, 2)); } catch (e) {}
 }
 
-// ─── MongoDB Atlas Integration ─────────────────────────────────────────────
-const MONGODB_URI = process.env.MONGODB_URI;
-let mongoClient = null;
-let mongoDb = null;
+// ─── Supabase Integration ──────────────────────────────────────────────────
+const SUPABASE_URL = process.env.SUPABASE_URL;
+const SUPABASE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_ANON_KEY;
+let supabase = null;
 let isSeeded = false;
 
-async function getMongoDb() {
-  if (!MONGODB_URI) return null;
-
-  // If we have a cached connection, verify it is still alive
-  if (mongoDb && mongoClient) {
-    try {
-      await mongoClient.db('admin').command({ ping: 1 });
-      return mongoDb;
-    } catch (_) {
-      // Topology closed or connection dropped — reset and reconnect
-      console.log('🔄 MongoDB connection lost, reconnecting...');
-      mongoClient = null;
-      mongoDb = null;
-    }
-  }
-
-  try {
-    mongoClient = new MongoClient(MONGODB_URI, {
-      maxPoolSize: 10,
-      serverSelectionTimeoutMS: 5000,
-      socketTimeoutMS: 45000,
-    });
-    await mongoClient.connect();
-    console.log('⚡ Connected to MongoDB Atlas Cloud!');
-    mongoDb = mongoClient.db('daily-poll');
-    if (!isSeeded) {
-      await seedCloudDb(mongoDb);
-      isSeeded = true;
-    }
-    return mongoDb;
-  } catch (err) {
-    console.error('⚠️ MongoDB Atlas connection error, falling back to local files:', err.message);
-    mongoClient = null;
-    mongoDb = null;
+function getSupabaseClient() {
+  if (!SUPABASE_URL || !SUPABASE_KEY || SUPABASE_URL.includes('your-project-id')) {
     return null;
   }
+  if (!supabase) {
+    try {
+      supabase = createClient(SUPABASE_URL, SUPABASE_KEY, {
+        auth: { persistSession: false },
+        realtime: { transport: ws }
+      });
+      console.log('⚡ Initialized Supabase Client!');
+    } catch (e) {
+      console.error('Failed to create Supabase client:', e.message);
+      return null;
+    }
+  }
+  return supabase;
 }
 
-async function seedCloudDb(db) {
+async function seedCloudDb(client) {
+  if (isSeeded) return;
   try {
-    const testsCount = await db.collection('tests').countDocuments();
-    if (testsCount === 0) {
+    const { count: testsCount, error: err1 } = await client.from('tests').select('*', { count: 'exact', head: true });
+    if (!err1 && testsCount === 0) {
       const fileData = readTestsFromFile();
       if (fileData.tests && fileData.tests.length > 0) {
-        await db.collection('tests').insertMany(fileData.tests);
-        console.log(`🌱 Seeded ${fileData.tests.length} tests to MongoDB Cloud`);
+        const formatted = fileData.tests.map(t => ({
+          id: t.id,
+          title: t.title,
+          created_at: t.createdAt || new Date().toISOString(),
+          timer_minutes: t.timerMinutes || 15,
+          status: t.status || 'draft',
+          questions: t.questions || []
+        }));
+        await client.from('tests').insert(formatted);
+        console.log(`🌱 Seeded ${formatted.length} tests to Supabase Cloud`);
       }
     }
-    const subsCount = await db.collection('submissions').countDocuments();
-    if (subsCount === 0) {
+    const { count: subsCount, error: err2 } = await client.from('submissions').select('*', { count: 'exact', head: true });
+    if (!err2 && subsCount === 0) {
       const fileSubs = readSubsFromFile();
       if (fileSubs.submissions && fileSubs.submissions.length > 0) {
-        await db.collection('submissions').insertMany(fileSubs.submissions);
-        console.log(`🌱 Seeded ${fileSubs.submissions.length} submissions to MongoDB Cloud`);
+        const formatted = fileSubs.submissions.map(s => ({
+          id: s.id,
+          test_id: s.testId,
+          started_at: s.startedAt,
+          submitted_at: s.submittedAt,
+          time_taken_seconds: s.timeTakenSeconds,
+          score: s.score,
+          total_questions: s.totalQuestions,
+          answers: s.answers || []
+        }));
+        await client.from('submissions').insert(formatted);
+        console.log(`🌱 Seeded ${formatted.length} submissions to Supabase Cloud`);
       }
     }
+    isSeeded = true;
   } catch (e) {
-    console.error('Failed to seed cloud database:', e.message);
+    console.error('Failed to seed Supabase database:', e.message);
   }
 }
 
 async function readTests() {
-  const db = await getMongoDb();
-  if (db) {
-    const tests = await db.collection('tests').find({}, { projection: { _id: 0 } }).toArray();
-    return { tests };
+  const client = getSupabaseClient();
+  if (client) {
+    try {
+      await seedCloudDb(client);
+      const { data, error } = await client.from('tests').select('*');
+      if (!error && data) {
+        const tests = data.map(t => ({
+          id: t.id,
+          title: t.title,
+          createdAt: t.created_at,
+          timerMinutes: t.timer_minutes,
+          status: t.status,
+          questions: t.questions || []
+        }));
+        return { tests };
+      }
+    } catch (e) {
+      console.error('⚠️ Supabase readTests error, falling back to local files:', e.message);
+    }
   }
   return readTestsFromFile();
 }
 
 async function writeTests(data) {
   writeTestsToFile(data);
-  const db = await getMongoDb();
-  if (db) {
-    const col = db.collection('tests');
-    await col.deleteMany({});
-    if (data.tests && data.tests.length > 0) {
-      const cleanTests = data.tests.map(({ _id, ...rest }) => rest);
-      await col.insertMany(cleanTests);
+  const client = getSupabaseClient();
+  if (client && data.tests) {
+    try {
+      const formatted = data.tests.map(t => ({
+        id: t.id,
+        title: t.title,
+        created_at: t.createdAt || new Date().toISOString(),
+        timer_minutes: t.timerMinutes || 15,
+        status: t.status || 'draft',
+        questions: t.questions || []
+      }));
+      const { error } = await client.from('tests').upsert(formatted);
+      if (error) console.error('Supabase writeTests error:', error.message);
+    } catch (e) {
+      console.error('Failed to write tests to Supabase:', e.message);
     }
   }
 }
 
 async function readSubs() {
-  const db = await getMongoDb();
-  if (db) {
-    const submissions = await db.collection('submissions').find({}, { projection: { _id: 0 } }).toArray();
-    return { submissions };
+  const client = getSupabaseClient();
+  if (client) {
+    try {
+      await seedCloudDb(client);
+      const { data, error } = await client.from('submissions').select('*');
+      if (!error && data) {
+        const submissions = data.map(s => ({
+          id: s.id,
+          testId: s.test_id,
+          startedAt: s.started_at,
+          submittedAt: s.submitted_at,
+          timeTakenSeconds: s.time_taken_seconds,
+          score: s.score,
+          totalQuestions: s.total_questions,
+          answers: s.answers || []
+        }));
+        return { submissions };
+      }
+    } catch (e) {
+      console.error('⚠️ Supabase readSubs error, falling back to local files:', e.message);
+    }
   }
   return readSubsFromFile();
 }
 
 async function writeSubs(data) {
   writeSubsToFile(data);
-  const db = await getMongoDb();
-  if (db) {
-    const col = db.collection('submissions');
-    await col.deleteMany({});
-    if (data.submissions && data.submissions.length > 0) {
-      const cleanSubs = data.submissions.map(({ _id, ...rest }) => rest);
-      await col.insertMany(cleanSubs);
+  const client = getSupabaseClient();
+  if (client && data.submissions) {
+    try {
+      const formatted = data.submissions.map(s => ({
+        id: s.id,
+        test_id: s.testId,
+        started_at: s.startedAt,
+        submitted_at: s.submittedAt,
+        time_taken_seconds: s.timeTakenSeconds,
+        score: s.score,
+        total_questions: s.totalQuestions,
+        answers: s.answers || []
+      }));
+      const { error } = await client.from('submissions').upsert(formatted);
+      if (error) console.error('Supabase writeSubs error:', error.message);
+    } catch (e) {
+      console.error('Failed to write submissions to Supabase:', e.message);
     }
   }
 }
@@ -778,10 +830,24 @@ app.post('/api/answer', async (req, res) => {
 
 // ─── Start Server / Export for Vercel ─────────────────────────────────────
 if (require.main === module) {
-  app.listen(PORT, () => {
+  const server = app.listen(PORT, () => {
     console.log(`✅ TestFlow server running at http://localhost:${PORT}`);
     console.log(`📊 Admin panel: http://localhost:${PORT}/admin.html`);
     console.log(`📈 Analytics: http://localhost:${PORT}/analytics.html`);
+  });
+
+  server.on('error', (err) => {
+    if (err.code === 'EADDRINUSE') {
+      const fallbackPort = Number(PORT) + 1;
+      console.log(`⚠️ Port ${PORT} is busy, switching to http://localhost:${fallbackPort}...`);
+      app.listen(fallbackPort, () => {
+        console.log(`✅ TestFlow server running at http://localhost:${fallbackPort}`);
+        console.log(`📊 Admin panel: http://localhost:${fallbackPort}/admin.html`);
+        console.log(`📈 Analytics: http://localhost:${fallbackPort}/analytics.html`);
+      });
+    } else {
+      console.error(err);
+    }
   });
 }
 

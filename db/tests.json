@@ -3,129 +3,627 @@
     {
       "id": "test_seed_001",
       "title": "Daily Quiz — Seed",
-      "createdAt": "2026-07-25T00:00:00.000Z",
+      "createdAt": "2026-07-25T00:00:00+00:00",
       "timerMinutes": 15,
       "status": "completed",
       "questions": [
         {
           "id": "q1",
           "text": "Question 1",
+          "topic": "General",
           "options": [
             "Option 1",
             "Option 2",
             "Option 3",
             "Option 4"
           ],
-          "correctIndex": 0,
-          "topic": "General"
+          "correctIndex": 0
         },
         {
           "id": "q2",
           "text": "Question 2",
+          "topic": "General",
           "options": [
             "Option 1",
             "Option 2",
             "Option 3",
             "Option 4"
           ],
-          "correctIndex": 0,
-          "topic": "General"
+          "correctIndex": 0
         },
         {
           "id": "q3",
           "text": "Question 3",
+          "topic": "General",
           "options": [
             "Option 1",
             "Option 2",
             "Option 3",
             "Option 4"
           ],
-          "correctIndex": 0,
-          "topic": "General"
+          "correctIndex": 0
         },
         {
           "id": "q4",
           "text": "Question 4",
+          "topic": "General",
           "options": [
             "Option 1",
             "Option 2",
             "Option 3",
             "Option 4"
           ],
-          "correctIndex": 0,
-          "topic": "General"
+          "correctIndex": 0
         },
         {
           "id": "q5",
           "text": "Question 5",
+          "topic": "General",
           "options": [
             "Option 1",
             "Option 2",
             "Option 3",
             "Option 4"
           ],
-          "correctIndex": 0,
-          "topic": "General"
+          "correctIndex": 0
         },
         {
           "id": "q6",
           "text": "Question 6",
+          "topic": "General",
           "options": [
             "Option 1",
             "Option 2",
             "Option 3",
             "Option 4"
           ],
-          "correctIndex": 0,
-          "topic": "General"
+          "correctIndex": 0
         },
         {
           "id": "q7",
           "text": "Question 7",
+          "topic": "General",
           "options": [
             "Option 1",
             "Option 2",
             "Option 3",
             "Option 4"
           ],
-          "correctIndex": 0,
-          "topic": "General"
+          "correctIndex": 0
         },
         {
           "id": "q8",
           "text": "Question 8",
+          "topic": "General",
           "options": [
             "Option 1",
             "Option 2",
             "Option 3",
             "Option 4"
           ],
-          "correctIndex": 0,
-          "topic": "General"
+          "correctIndex": 0
         },
         {
           "id": "q9",
           "text": "Question 9",
+          "topic": "General",
           "options": [
             "Option 1",
             "Option 2",
             "Option 3",
             "Option 4"
           ],
-          "correctIndex": 0,
-          "topic": "General"
+          "correctIndex": 0
         },
         {
           "id": "q10",
           "text": "Question 10",
+          "topic": "General",
           "options": [
             "Option 1",
             "Option 2",
             "Option 3",
             "Option 4"
           ],
+          "correctIndex": 0
+        }
+      ]
+    },
+    {
+      "id": "test_1785251199152_o5wk",
+      "title": "demo",
+      "createdAt": "2026-07-28T15:06:39.152+00:00",
+      "timerMinutes": 15,
+      "status": "completed",
+      "questions": [
+        {
+          "id": "q1",
+          "text": "If a shopkeeper marks an item 40% above cost price and gives a 10% discount, what is his profit percentage?",
+          "topic": "Profit and Loss",
+          "options": [
+            "26%",
+            "30%",
+            "36%",
+            "40%"
+          ],
+          "correctIndex": 0
+        },
+        {
+          "id": "q2",
+          "text": "A can complete a job in 12 days and B can complete it in 18 days. Working together, how many days will they take?",
+          "topic": "Time and Work",
+          "options": [
+            "6",
+            "7.2",
+            "8",
+            "9"
+          ],
+          "correctIndex": 1
+        },
+        {
+          "id": "q3",
+          "text": "A train 150 m long crosses a pole in 15 seconds. What is the speed of the train in km/hr?",
+          "topic": "Time Speed and Distance",
+          "options": [
+            "30",
+            "36",
+            "40",
+            "45"
+          ],
+          "correctIndex": 2
+        },
+        {
+          "id": "q4",
+          "text": "The average of 5 numbers is 27. If one number is excluded, the average becomes 25. What is the excluded number?",
+          "topic": "Averages",
+          "options": [
+            "30",
+            "32",
+            "35",
+            "37"
+          ],
+          "correctIndex": 2
+        },
+        {
+          "id": "q5",
+          "text": "What is 15% of 320?",
+          "topic": "Percentages",
+          "options": [
+            "42",
+            "45",
+            "48",
+            "50"
+          ],
+          "correctIndex": 2
+        },
+        {
+          "id": "q6",
+          "text": "Find the simple interest on Rs. 5000 at 8% per annum for 3 years.",
+          "topic": "Simple Interest",
+          "options": [
+            "1000",
+            "1100",
+            "1200",
+            "1300"
+          ],
+          "correctIndex": 2
+        },
+        {
+          "id": "q7",
+          "text": "The ratio of two numbers is 3:5 and their sum is 96. What is the smaller number?",
+          "topic": "Ratio and Proportion",
+          "options": [
+            "30",
+            "32",
+            "36",
+            "40"
+          ],
+          "correctIndex": 2
+        },
+        {
+          "id": "q8",
+          "text": "Find the next number in the series: 2, 6, 12, 20, 30, ?",
+          "topic": "Number Series",
+          "options": [
+            "36",
+            "40",
+            "42",
+            "44"
+          ],
+          "correctIndex": 2
+        },
+        {
+          "id": "q9",
+          "text": "In how many ways can the letters of the word 'TABLE' be arranged?",
+          "topic": "Permutations and Combinations",
+          "options": [
+            "60",
+            "120",
+            "720",
+            "24"
+          ],
+          "correctIndex": 1
+        },
+        {
+          "id": "q10",
+          "text": "A bag contains 4 red and 6 blue balls. What is the probability of drawing a red ball at random?",
+          "topic": "Probability",
+          "options": [
+            "0.2",
+            "0.3",
+            "0.4",
+            "0.5"
+          ],
+          "correctIndex": 2
+        },
+        {
+          "id": "q11",
+          "text": "Pointing to a man, a woman said, 'His mother is the only daughter of my mother.' How is the woman related to the man?",
+          "topic": "Blood Relations",
+          "options": [
+            "Sister",
+            "Mother",
+            "Aunt",
+            "Grandmother"
+          ],
+          "correctIndex": 1
+        },
+        {
+          "id": "q12",
+          "text": "If in a certain code, 'CAT' is written as 'DBU', how is 'DOG' written in that code?",
+          "topic": "Coding-Decoding",
+          "options": [
+            "EPH",
+            "EPI",
+            "FPH",
+            "EQH"
+          ],
+          "correctIndex": 0
+        },
+        {
+          "id": "q13",
+          "text": "Choose the word most similar in meaning to 'Benevolent'.",
+          "topic": "Verbal Ability",
+          "options": [
+            "Cruel",
+            "Generous",
+            "Greedy",
+            "Selfish"
+          ],
+          "correctIndex": 1
+        },
+        {
+          "id": "q14",
+          "text": "Choose the word most opposite in meaning to 'Scarce'.",
+          "topic": "Verbal Ability",
+          "options": [
+            "Rare",
+            "Abundant",
+            "Limited",
+            "Sparse"
+          ],
+          "correctIndex": 1
+        },
+        {
+          "id": "q15",
+          "text": "A sum of money doubles itself in 8 years at simple interest. What is the rate of interest per annum?",
+          "topic": "Simple Interest",
+          "options": [
+            "10%",
+            "12%",
+            "12.5%",
+            "15%"
+          ],
+          "correctIndex": 2
+        },
+        {
+          "id": "q16",
+          "text": "If the cost price of 20 articles equals the selling price of 16 articles, find the profit percentage.",
+          "topic": "Profit and Loss",
+          "options": [
+            "20%",
+            "25%",
+            "30%",
+            "35%"
+          ],
+          "correctIndex": 1
+        },
+        {
+          "id": "q17",
+          "text": "A car travels 60 km in the first hour and 40 km in the second hour. What is its average speed for the journey?",
+          "topic": "Time Speed and Distance",
+          "options": [
+            "45 km/hr",
+            "48 km/hr",
+            "50 km/hr",
+            "52 km/hr"
+          ],
+          "correctIndex": 2
+        },
+        {
+          "id": "q18",
+          "text": "Two pipes A and B can fill a tank in 20 and 30 minutes respectively. If both are opened together, how long will it take to fill the tank?",
+          "topic": "Time and Work",
+          "options": [
+            "10 minutes",
+            "12 minutes",
+            "15 minutes",
+            "18 minutes"
+          ],
+          "correctIndex": 2
+        },
+        {
+          "id": "q19",
+          "text": "What is the compound interest on Rs. 10000 at 10% per annum for 2 years?",
+          "topic": "Compound Interest",
+          "options": [
+            "1000",
+            "2000",
+            "2100",
+            "2200"
+          ],
+          "correctIndex": 2
+        },
+        {
+          "id": "q20",
+          "text": "Look at this series: 7, 10, 8, 11, 9, 12, ? What number should come next?",
+          "topic": "Number Series",
+          "options": [
+            "10",
+            "13",
+            "7",
+            "15"
+          ],
+          "correctIndex": 0
+        }
+      ]
+    },
+    {
+      "id": "test_1785328990676_uan6",
+      "title": "sample1",
+      "createdAt": "2026-07-29T12:43:10.676Z",
+      "timerMinutes": 15,
+      "status": "draft",
+      "questions": [
+        {
+          "id": "q1",
+          "text": "If a shopkeeper marks an item 40% above cost price and gives a 10% discount, what is his profit percentage?",
+          "options": [
+            "26%",
+            "30%",
+            "36%",
+            "40%"
+          ],
           "correctIndex": 0,
-          "topic": "General"
+          "topic": "Profit and Loss"
+        },
+        {
+          "id": "q2",
+          "text": "A can complete a job in 12 days and B can complete it in 18 days. Working together, how many days will they take?",
+          "options": [
+            "6",
+            "7.2",
+            "8",
+            "9"
+          ],
+          "correctIndex": 1,
+          "topic": "Time and Work"
+        },
+        {
+          "id": "q3",
+          "text": "A train 150 m long crosses a pole in 15 seconds. What is the speed of the train in km/hr?",
+          "options": [
+            "30",
+            "36",
+            "40",
+            "45"
+          ],
+          "correctIndex": 2,
+          "topic": "Time Speed and Distance"
+        },
+        {
+          "id": "q4",
+          "text": "The average of 5 numbers is 27. If one number is excluded, the average becomes 25. What is the excluded number?",
+          "options": [
+            "30",
+            "32",
+            "35",
+            "37"
+          ],
+          "correctIndex": 2,
+          "topic": "Averages"
+        },
+        {
+          "id": "q5",
+          "text": "What is 15% of 320?",
+          "options": [
+            "42",
+            "45",
+            "48",
+            "50"
+          ],
+          "correctIndex": 2,
+          "topic": "Percentages"
+        },
+        {
+          "id": "q6",
+          "text": "Find the simple interest on Rs. 5000 at 8% per annum for 3 years.",
+          "options": [
+            "1000",
+            "1100",
+            "1200",
+            "1300"
+          ],
+          "correctIndex": 2,
+          "topic": "Simple Interest"
+        },
+        {
+          "id": "q7",
+          "text": "The ratio of two numbers is 3:5 and their sum is 96. What is the smaller number?",
+          "options": [
+            "30",
+            "32",
+            "36",
+            "40"
+          ],
+          "correctIndex": 2,
+          "topic": "Ratio and Proportion"
+        },
+        {
+          "id": "q8",
+          "text": "Find the next number in the series: 2, 6, 12, 20, 30, ?",
+          "options": [
+            "36",
+            "40",
+            "42",
+            "44"
+          ],
+          "correctIndex": 2,
+          "topic": "Number Series"
+        },
+        {
+          "id": "q9",
+          "text": "In how many ways can the letters of the word 'TABLE' be arranged?",
+          "options": [
+            "60",
+            "120",
+            "720",
+            "24"
+          ],
+          "correctIndex": 1,
+          "topic": "Permutations and Combinations"
+        },
+        {
+          "id": "q10",
+          "text": "A bag contains 4 red and 6 blue balls. What is the probability of drawing a red ball at random?",
+          "options": [
+            "0.2",
+            "0.3",
+            "0.4",
+            "0.5"
+          ],
+          "correctIndex": 2,
+          "topic": "Probability"
+        },
+        {
+          "id": "q11",
+          "text": "Pointing to a man, a woman said, 'His mother is the only daughter of my mother.' How is the woman related to the man?",
+          "options": [
+            "Sister",
+            "Mother",
+            "Aunt",
+            "Grandmother"
+          ],
+          "correctIndex": 1,
+          "topic": "Blood Relations"
+        },
+        {
+          "id": "q12",
+          "text": "If in a certain code, 'CAT' is written as 'DBU', how is 'DOG' written in that code?",
+          "options": [
+            "EPH",
+            "EPI",
+            "FPH",
+            "EQH"
+          ],
+          "correctIndex": 0,
+          "topic": "Coding-Decoding"
+        },
+        {
+          "id": "q13",
+          "text": "Choose the word most similar in meaning to 'Benevolent'.",
+          "options": [
+            "Cruel",
+            "Generous",
+            "Greedy",
+            "Selfish"
+          ],
+          "correctIndex": 1,
+          "topic": "Verbal Ability"
+        },
+        {
+          "id": "q14",
+          "text": "Choose the word most opposite in meaning to 'Scarce'.",
+          "options": [
+            "Rare",
+            "Abundant",
+            "Limited",
+            "Sparse"
+          ],
+          "correctIndex": 1,
+          "topic": "Verbal Ability"
+        },
+        {
+          "id": "q15",
+          "text": "A sum of money doubles itself in 8 years at simple interest. What is the rate of interest per annum?",
+          "options": [
+            "10%",
+            "12%",
+            "12.5%",
+            "15%"
+          ],
+          "correctIndex": 2,
+          "topic": "Simple Interest"
+        },
+        {
+          "id": "q16",
+          "text": "If the cost price of 20 articles equals the selling price of 16 articles, find the profit percentage.",
+          "options": [
+            "20%",
+            "25%",
+            "30%",
+            "35%"
+          ],
+          "correctIndex": 1,
+          "topic": "Profit and Loss"
+        },
+        {
+          "id": "q17",
+          "text": "A car travels 60 km in the first hour and 40 km in the second hour. What is its average speed for the journey?",
+          "options": [
+            "45 km/hr",
+            "48 km/hr",
+            "50 km/hr",
+            "52 km/hr"
+          ],
+          "correctIndex": 2,
+          "topic": "Time Speed and Distance"
+        },
+        {
+          "id": "q18",
+          "text": "Two pipes A and B can fill a tank in 20 and 30 minutes respectively. If both are opened together, how long will it take to fill the tank?",
+          "options": [
+            "10 minutes",
+            "12 minutes",
+            "15 minutes",
+            "18 minutes"
+          ],
+          "correctIndex": 2,
+          "topic": "Time and Work"
+        },
+        {
+          "id": "q19",
+          "text": "What is the compound interest on Rs. 10000 at 10% per annum for 2 years?",
+          "options": [
+            "1000",
+            "2000",
+            "2100",
+            "2200"
+          ],
+          "correctIndex": 2,
+          "topic": "Compound Interest"
+        },
+        {
+          "id": "q20",
+          "text": "Look at this series: 7, 10, 8, 11, 9, 12, ? What number should come next?",
+          "options": [
+            "10",
+            "13",
+            "7",
+            "15"
+          ],
+          "correctIndex": 0,
+          "topic": "Number Series"
         }
       ]
     }
